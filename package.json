@@ -1,0 +1,33 @@
+{
+  "name": "proyecto-final-backend",
+  "version": "0.0.1",
+  "description": "Este es el backend que tendremos para  el sistema de gestión de reservas para Hotel Pere Maria, y ofrecerá una API RESTful para que tanto la aplicación de escritorio como la aplicación móvil puedan interactuar con la base de datos y realizar operaciones relacionadas con las reservas, habitaciones, clientes y otros aspectos del sistema hotelero.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "format": "prettier --write .",
+    "check-format": "prettier --check ."
+  },
+  "author": "Mateo Manchola Barbosa, Guillem Anguiano Molines, Raúl Coll Sánchez",
+  "type": "module",
+  "imports": {
+    "#i/*": "./src/*",
+    "#commons/*": "./src/modules/commons/*",
+    "#libs/*": "./src/libs/*",
+    "#c": "./src/constants.js",
+    "#modules/*": "./src/modules/*"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.0.0",
+    "nodemailer": "^7.0.10"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2"
+  }
+}

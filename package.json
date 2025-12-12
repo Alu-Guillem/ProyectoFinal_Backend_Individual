@@ -12,7 +12,7 @@
   "author": "Mateo Manchola Barbosa, Guillem Anguiano Molines, Raúl Coll Sánchez",
   "type": "module",
   "imports": {
-    "#i/*": "./src/*",
+    "#r/*": "./src/*",
     "#commons/*": "./src/modules/commons/*",
     "#libs/*": "./src/libs/*",
     "#c": "./src/constants.js",
@@ -24,9 +24,13 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.0.0",
+    "morgan": "^1.10.1",
     "nodemailer": "^7.0.10"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/mongoose": "^5.11.96",
+    "@types/node": "^25.0.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2"
   }

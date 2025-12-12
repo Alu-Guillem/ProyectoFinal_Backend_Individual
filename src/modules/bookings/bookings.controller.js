@@ -49,7 +49,7 @@ export async function getOneBooking(req, res) {
     res.sendStatus(200)
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: 'Internal Server Error' })
+    res.status(500).json({ message: 'Error del servidor' })
   }
 }
 
@@ -72,7 +72,7 @@ export async function updateBooking(req, res) {
 
     // TODO: Implementar la lógica para actualizar una reserva
 
-    res.sendStatus(201)
+    res.sendStatus(204)
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })
@@ -86,6 +86,7 @@ export async function updateBooking(req, res) {
 export async function cancelBooking(req, res) {
   try {
     // TODO: Implementar la lógica para cancelar una reserva
+    res.status(200).json({ message: 'Booking cancelled' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })
@@ -99,6 +100,7 @@ export async function cancelBooking(req, res) {
 export async function extendBooking(req, res) {
   try {
     // TODO: Implementar la lógica para extender una reserva
+    res.status(200).json({ message: 'Booking extended' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })
@@ -112,6 +114,7 @@ export async function extendBooking(req, res) {
 export async function deleteBooking(req, res) {
   try {
     // TODO: Implementar la lógica para eliminar una reserva
+    res.status(200).json({ message: 'Booking deleted' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })

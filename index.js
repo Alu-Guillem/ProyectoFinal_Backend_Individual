@@ -13,7 +13,7 @@ app.use(morgan('dev'))
 app.use('/api', router)
 
 app.use((req, res) => {
-  res.status(404).json({ message: `Endpoint ${req.originalUrl} not found` })
+  res.status(404).json({ message: `Endpoint ${req.originalUrl} no encontrado` })
 })
 
 app.listen(PORT, HOSTNAME, () => {

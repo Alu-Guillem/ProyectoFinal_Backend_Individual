@@ -7,7 +7,7 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "#i/*": ["./src/*"],
+      "#r/*": ["./src/*"],
       "#commons/*": ["./src/modules/commons/*"],
       "#libs/*": ["./src/libs/*"],
       "#c": ["./src/constants.js"],

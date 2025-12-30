@@ -1,6 +1,10 @@
 /**
- * @param {import("types").Booking} booking
- * @param {import("types").Booking} newBooking
+ * @typedef {{ startDate: Date | string, endDate: Date | string }} DateRange
+ */
+
+/**
+ * @param {DateRange} booking
+ * @param {DateRange} newBooking
  */
 export const hasOverlap = (booking, newBooking) => {
   const newStart = new Date(newBooking.startDate)
@@ -13,7 +17,7 @@ export const hasOverlap = (booking, newBooking) => {
 
 /**
  * @param {import("types").Booking[]} bookings
- * @param {import("types").Booking} newBooking
+ * @param {DateRange} newBooking
  */
 export const isAvailable = (bookings, newBooking) =>
   !bookings.some(booking => hasOverlap(booking, newBooking) && booking.status === 'active')

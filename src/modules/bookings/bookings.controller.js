@@ -186,8 +186,23 @@ export async function updateBooking(req, res) {
  */
 export async function cancelBooking(req, res) {
   try {
-    // TODO: Implementar la lógica para cancelar una reserva
-    res.status(200).json({ message: 'Booking cancelled' })
+    const { role, userId } = req.session
+    const { id } = req.params
+
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
+
+    const filter = { _id: id }
+    if (role === 'customer') {
+      filter.userId = userId
+    }
+
+    const booking = await Booking.findOne(filter)
+    if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
+
+    booking.status = 'canceled'
+    await booking.save()
+
+    res.status(200).json({ message: 'Reserva cancelada correctamente' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })
@@ -214,8 +229,22 @@ export async function extendBooking(req, res) {
  */
 export async function deleteBooking(req, res) {
   try {
-    // TODO: Implementar la lógica para eliminar una reserva
-    res.status(200).json({ message: 'Booking deleted' })
+    const { role, userId } = req.session
+    const { id } = req.params
+
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
+
+    const filter = { _id: id }
+    if (role === 'customer') {
+      filter.userId = userId
+    }
+
+    const booking = await Booking.findOne(filter)
+    if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
+
+    await Booking.deleteOne({ _id: id })
+
+    res.status(200).json({ message: 'Reserva eliminada correctamente' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })

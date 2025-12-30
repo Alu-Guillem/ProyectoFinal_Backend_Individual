@@ -1,14 +1,9 @@
 import { JWT_SECRET } from '#r/constants.js'
 import jwt from 'jsonwebtoken'
 
-/**
- * @param {import('types').AuthenticatedRequest} req
- * @param {import('express').Response} res
-   @param {import('express').NextFunction} next
- */
-export function authMiddleware(req, res, next) {
+export function sessionMiddleware(req, res, next) {
   const { authorization } = req.headers
-  if (!authorization) return res.status(401).json({ message: 'Inicia sesión para continuar' })
+  if (!authorization) next()
 
   /** @type {import('types').Session} */
   const payload = jwt.verify(authorization, JWT_SECRET)
@@ -17,6 +12,17 @@ export function authMiddleware(req, res, next) {
     userId: payload.userId,
     role: payload.role,
   }
+
+  next()
+}
+
+/**
+ * @param {import('types').AuthenticatedRequest} req
+ * @param {import('express').Response} res
+   @param {import('express').NextFunction} next
+ */
+export function authMiddleware(req, res, next) {
+  if (!req.session) return res.status(401).json({ message: 'Inicia sesión para continuar' })
   next()
 }
 

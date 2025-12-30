@@ -1,11 +1,43 @@
+import { JWT_SECRET } from '#r/constants.js'
+import jwt from 'jsonwebtoken'
+
+/**
+ * @param {import('types').AuthenticatedRequest} req
+ * @param {import('express').Response} res
+   @param {import('express').NextFunction} next
+ */
 export function authMiddleware(req, res, next) {
-  req.session = {}
-  req.session.userId = '507f1f77bcf86cd799439011'
-  req.session.role = 'customer'
+  const { authorization } = req.headers
+  if (!authorization) return res.status(401).json({ message: 'Inicia sesión para continuar' })
+
+  /** @type {import('types').Session} */
+  const payload = jwt.verify(authorization, JWT_SECRET)
+
+  req.session = {
+    userId: payload.userId,
+    role: payload.role,
+  }
   next()
 }
-export function requireRole(role) {
+
+/*
+ * for testing u can use this token:
+ * eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1MDdmMWY3N2JjZjg2Y2Q3OTk0MzkwMTEiLCJyb2xlIjoiY3VzdG9tZXIifQ.UBpM2lu2z7MgBCL0gK7KcxcIGWcDHgoOfGtjau9Kowg
+ */
+
+/**
+ * @param {('admin' | 'customer' | 'employee')[]} roles
+ */
+export const requireRole = roles => {
+  /**
+ * @param {import('types').AuthenticatedRequest} req
+ * @param {import('express').Response} res
+   @param {import('express').NextFunction} next
+ */
   return (req, res, next) => {
+    if (!roles.includes(req.session.role))
+      return res.status(403).json({ message: 'No tienes permisos para realizar esta acción' })
+
     next()
   }
 }

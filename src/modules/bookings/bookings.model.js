@@ -96,3 +96,22 @@ export const BookingInputSchema = {
 export const validateBooking = bookingData => {
   return validateSchema(BookingInputSchema, bookingData)
 }
+
+/**
+ * @type {import('types').ValidationSchema}
+ */
+export const BookingUpdateSchema = {
+  startDate: [isValidDate('fecha de inicio')],
+  endDate: [isValidDate('fecha de fin')],
+  occupants: [isInteger('ocupantes'), isPositiveNumber('ocupantes')],
+}
+
+/**
+ * Valida los datos de actualización de una reserva
+ * @param {Object} bookingData - Datos a validar
+ * @returns {Object} - Datos validados
+ * @throws {Error} - ValidationError
+ */
+export const validateBookingUpdate = bookingData => {
+  return validateSchema(BookingUpdateSchema, bookingData)
+}

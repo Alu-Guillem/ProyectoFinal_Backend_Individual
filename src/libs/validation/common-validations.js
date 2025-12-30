@@ -276,3 +276,30 @@ export const match = createValidator((field, value, pattern, errorMessage) => {
   if (!pattern.test(String(value)))
     return errorMessage || `El campo '${field}' no cumple con el formato requerido`
 })
+
+/**
+ * Valida que un valor tenga formato de fecha DD/MM/YYYY válida
+ * @type {import('types').commonValidation}
+ * @example
+ * dateValidator('fecha')('25/12/2023') // true
+ * dateValidator('fecha')('31/02/2023') // Error: El campo "fecha" tiene un día inválido
+ */
+export const isValidDate = createValidator((field, value) => {
+  if (isEmpty(value)) return
+
+  const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/
+  const match = String(value).match(regex)
+  if (!match) return `El campo '${field}' debe tener el formato DD/MM/YYYY`
+
+  const day = parseInt(match[1], 10)
+  const month = parseInt(match[2], 10)
+  const year = parseInt(match[3], 10)
+
+  if (month < 1 || month > 12) return `El campo '${field}' tiene un mes inválido`
+
+  const maxDays = new Date(year, month, 0).getDate()
+  if (day < 1 || day > maxDays) return `El campo '${field}' tiene un día inválido`
+
+  const date = new Date(year, month - 1, day)
+  if (isNaN(date.getTime())) return `El campo '${field}' debe ser una fecha válida`
+})

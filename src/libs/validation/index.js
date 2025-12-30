@@ -42,7 +42,7 @@ export class ValidationError extends Error {
  *
  * @param {import('types').ValidationSchema} schema - El schema de validación con los campos y sus validadores
  * @param {Object} data - El objeto con los datos a validar
- * @returns {boolean} - Retorna true si todas las validaciones pasan exitosamente
+ * @returns {Object} - Retorna una copia del objeto solo de los campos validados
  * @throws {ValidationError} - Lanza un ValidationError con los errores por campo si alguna validación falla
  *
  * @example
@@ -57,6 +57,7 @@ export class ValidationError extends Error {
 export const validateSchema = (schema, data) => {
   /** @type {Object<string, string[]>} */
   const errors = {}
+  const validatedData = {}
 
   for (const [fieldName, validators] of Object.entries(schema)) {
     const value = data[fieldName] ?? undefined
@@ -69,13 +70,14 @@ export const validateSchema = (schema, data) => {
         errors[fieldName].push(err.message)
       }
     }
+    validatedData[fieldName] = value
   }
 
   if (Object.keys(errors).length) {
     throw new ValidationError(errors)
   }
 
-  return true
+  return validatedData
 }
 
 export * from './common-validations.js'

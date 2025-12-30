@@ -1,79 +1,93 @@
-import { Schema, Types } from 'mongoose'
+import { Schema, Types, model } from 'mongoose'
 import {
   isPositiveNumber,
-  isValidNumber,
   isRequired,
   isInteger,
   validateSchema,
+  isValidDate,
 } from '#libs/validation/index.js'
+import { formatDate } from '#commons/index.js'
 
-export const Booking = new Schema({
-  userId: {
-    type: Types.ObjectId,
-    required: true,
+/**
+ * @type {Schema<import('types').Booking>}
+ */
+export const BookingDatabaseSchema = new Schema(
+  {
+    userId: {
+      type: Types.ObjectId,
+      required: true,
+    },
+    roomId: {
+      type: Types.ObjectId,
+      required: true,
+    },
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+      required: true,
+    },
+    bookingDate: {
+      type: Date,
+      default: Date.now,
+    },
+    occupants: {
+      type: Number,
+      required: true,
+    },
+    pricePerNight: {
+      type: Number,
+      required: true,
+    },
+    totalPrice: {
+      type: Number,
+      required: true,
+    },
+    discount: {
+      type: Number,
+      default: 0,
+    },
+    totalNights: {
+      type: Number,
+      required: true,
+    },
   },
-  roomId: {
-    type: Types.ObjectId,
-    required: true,
+  {
+    toJSON: {
+      transform(_doc, ret) {
+        ret.startDate = formatDate(ret.startDate)
+        ret.endDate = formatDate(ret.endDate)
+        ret.bookingDate = formatDate(ret.bookingDate)
+        return ret
+      },
+    },
   },
-  startDate: {
-    type: Date,
-    required: true,
-  },
-  endDate: {
-    type: Date,
-    required: true,
-  },
-  bookingDate: {
-    type: Date,
-    default: Date.now,
-  },
-  occupants: {
-    type: Number,
-    required: true,
-  },
-  pricePerNight: {
-    type: Number,
-    required: true,
-  },
-  totalPrice: {
-    type: Number,
-    required: true,
-  },
-  discount: {
-    type: Number,
-    default: 0,
-  },
-})
+)
+
+/**
+ * @type {import('mongoose').Model<import('types').Booking>}
+ */
+export const Booking = model('Booking', BookingDatabaseSchema)
 
 /**
  * @type {import('types').ValidationSchema}
  */
-export const BookingFields = {
+export const BookingInputSchema = {
   userId: [isRequired('id de usuario')],
   roomId: [isRequired('id de habitación')],
-  startDate: [isRequired('fecha de inicio')],
-  endDate: [isRequired('fecha de fin')],
+  startDate: [isRequired('fecha de inicio'), isValidDate('fecha de inicio')],
+  endDate: [isRequired('fecha de fin'), isValidDate('fecha de fin')],
   occupants: [isRequired('ocupantes'), isInteger('ocupantes'), isPositiveNumber('ocupantes')],
-  pricePerNight: [
-    isRequired('precio por noche'),
-    isValidNumber('precio por noche'),
-    isPositiveNumber('precio por noche'),
-  ],
-  totalPrice: [
-    isRequired('precio total'),
-    isValidNumber('precio total'),
-    isPositiveNumber('precio total'),
-  ],
-  discount: [isValidNumber('descuento'), isPositiveNumber('descuento')],
 }
 
 /**
  * Valida los datos de una reserva
  * @param {Object} bookingData - Datos de la reserva a validar
- * @returns {boolean} - true si todas las validaciones pasan
+ * @returns {Object} - true si todas las validaciones pasan
  * @throws {Error} - Lanza un error si alguna validación falla
  */
 export const validateBooking = bookingData => {
-  return validateSchema(BookingFields, bookingData)
+  return validateSchema(BookingInputSchema, bookingData)
 }

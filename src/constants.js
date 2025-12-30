@@ -9,4 +9,5 @@ export const {
   DB_USER = 'user',
   DB_PASS = 'password',
   DB_NAME = 'mydatabase',
+  JWT_SECRET = 'your_jwt_secret',
 } = process.env

@@ -53,6 +53,11 @@ export const BookingDatabaseSchema = new Schema(
       type: Number,
       required: true,
     },
+    status: {
+      type: String,
+      enum: ['canceled', 'active'],
+      default: 'active',
+    },
   },
   {
     toJSON: {

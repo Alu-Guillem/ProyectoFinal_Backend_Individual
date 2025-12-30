@@ -16,4 +16,4 @@ export const hasOverlap = (booking, newBooking) => {
  * @param {import("types").Booking} newBooking
  */
 export const isAvailable = (bookings, newBooking) =>
-  !bookings.some(booking => hasOverlap(booking, newBooking))
+  !bookings.some(booking => hasOverlap(booking, newBooking) && booking.status === 'active')

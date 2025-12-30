@@ -12,4 +12,5 @@ export interface Booking {
   totalPrice: number
   discount?: number
   totalNights: number
+  status: 'canceled' | 'active'
 }

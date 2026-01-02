@@ -6,6 +6,7 @@ export function sessionMiddleware(req, res, next) {
   if (!authorization) next()
 
   /** @type {import('types').Session} */
+  // @ts-ignore
   const payload = jwt.verify(authorization, JWT_SECRET)
 
   req.session = {

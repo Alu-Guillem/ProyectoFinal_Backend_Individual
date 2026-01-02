@@ -3,9 +3,11 @@ import router from '#r/router.js'
 import morgan from 'morgan'
 import { HOSTNAME, PORT } from '#c'
 import { connectDB } from '#libs/database/index.js'
+import { connectEmail, testTemplates } from '#libs/mailing/index.js'
 
 const app = express()
 connectDB()
+connectEmail()
 
 app.use(express.json())
 app.use(morgan('dev'))

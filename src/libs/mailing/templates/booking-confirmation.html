@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Confirmación de reserva</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #222;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .box {
+            background: #f5f7fb;
+            padding: 14px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Tu reserva está confirmada</h2>
+        <div class="box">
+            <p><strong>Cliente:</strong> {{name}}</p>
+            <p><strong>Habitación:</strong> {{roomName}}</p>
+            <p><strong>Check-in:</strong> {{checkIn}}</p>
+            <p><strong>Check-out:</strong> {{checkOut}}</p>
+            <p><strong>Precio total:</strong> {{totalPrice}}</p>
+        </div>
+        <p>Gracias por confiar en TryCatchers.</p>
+    </div>
+</body>
+
+</html>

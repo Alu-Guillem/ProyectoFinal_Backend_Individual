@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Bienvenido/a</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #222;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .btn {
+            background: #2d6cdf;
+            color: #fff;
+            padding: 10px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>¡Hola, {{name}}!</h2>
+        <p>Tu registro se ha realizado correctamente.</p>
+        <p>Puedes completar tu perfil accediendo aquí: <a class="btn" href="{{link}}">Entrar</a></p>
+        <p>Si no solicitaste este registro, ignora este mensaje.</p>
+    </div>
+</body>
+
+</html>

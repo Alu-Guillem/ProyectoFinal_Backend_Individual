@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Modelo de datos para Reservas (Bookings)
+ * @module modules/bookings/model
+ *
+ * Define el schema de MongoDB, validadores y modelo para las reservas.
+ *
+ * @requires mongoose
+ * @requires #libs/validation
+ * @requires #commons
+ */
+
 import { Schema, Types, model } from 'mongoose'
 import {
   isPositiveNumber,
@@ -9,6 +20,21 @@ import {
 import { formatDate } from '#commons/index.js'
 
 /**
+ * Schema de MongoDB para reservas
+ *
+ * @typedef {Object} BookingSchema
+ * @property {Types.ObjectId} userId - ID del usuario que realiza la reserva
+ * @property {Types.ObjectId} roomId - ID de la habitación reservada
+ * @property {Date} startDate - Fecha de inicio de la estancia
+ * @property {Date} endDate - Fecha de fin de la estancia
+ * @property {Date} bookingDate - Fecha en que se realizó la reserva
+ * @property {number} occupants - Número de ocupantes
+ * @property {number} pricePerNight - Precio por noche (con descuento aplicado)
+ * @property {number} totalPrice - Precio total de la estancia
+ * @property {number} discount - Porcentaje de descuento aplicado
+ * @property {number} totalNights - Número total de noches
+ * @property {'active'|'canceled'} status - Estado de la reserva
+ *
  * @type {Schema<import('types').Booking>}
  */
 export const BookingDatabaseSchema = new Schema(
@@ -71,9 +97,6 @@ export const BookingDatabaseSchema = new Schema(
   },
 )
 
-/**
- * @type {import('mongoose').Model<import('types').Booking>}
- */
 export const Booking = model('Booking', BookingDatabaseSchema)
 
 /**

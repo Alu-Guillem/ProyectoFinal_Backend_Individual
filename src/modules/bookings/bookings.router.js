@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Router de reservas (Bookings)
+ * @module modules/bookings/router
+ *
+ * Define las rutas REST para la gestión de reservas.
+ * Todas las rutas requieren autenticación previa.
+ *
+ * @requires express
+ * @requires ./bookings.controller
+ */
+
 import { Router } from 'express'
 import {
   getOneBooking,
@@ -10,22 +21,68 @@ import {
 } from '#modules/bookings/bookings.controller.js'
 
 const router = Router()
-// GET /api/bookings
+
+/**
+ * @route GET /api/bookings
+ * @description Obtiene todas las reservas (filtradas por rol)
+ * @access Admin/Employee: todas | Customer: solo propias
+ */
 router.get('/', getBookings)
-// POST /api/bookings
+
+/**
+ * @route POST /api/bookings
+ * @description Crea una nueva reserva
+ * @access Todos los usuarios autenticados
+ * @body {string} roomId - ID de la habitación
+ * @body {string} startDate - Fecha de inicio (DD/MM/YYYY)
+ * @body {string} endDate - Fecha de fin (DD/MM/YYYY)
+ * @body {number} occupants - Número de ocupantes
+ * @body {string} [userId] - ID del usuario (solo admin/employee)
+ */
 router.post('/', createNewBooking)
 
-// GET /api/bookings/:id
+/**
+ * @route GET /api/bookings/:id
+ * @description Obtiene una reserva específica por ID
+ * @access Admin/Employee: cualquiera | Customer: solo propias
+ * @param {string} id - ID de la reserva
+ */
 router.get('/:id', getOneBooking)
 
-// PUT /api/bookings/:id
+/**
+ * @route PUT /api/bookings/:id
+ * @description Actualiza fechas u ocupantes de una reserva
+ * @access Admin/Employee: cualquiera | Customer: solo propias
+ * @param {string} id - ID de la reserva
+ * @body {string} [startDate] - Nueva fecha de inicio
+ * @body {string} [endDate] - Nueva fecha de fin
+ * @body {number} [occupants] - Nuevo número de ocupantes
+ */
 router.put('/:id', updateBooking)
-// PUT /api/bookings/:id/cancel
+
+/**
+ * @route PUT /api/bookings/:id/cancel
+ * @description Cancela una reserva (cambia estado a 'canceled')
+ * @access Admin/Employee: cualquiera | Customer: solo propias
+ * @param {string} id - ID de la reserva
+ */
 router.put('/:id/cancel', cancelBooking)
-// PUT /api/bookings/:id/extend
+
+/**
+ * @route PUT /api/bookings/:id/extend
+ * @description Extiende la fecha de fin de una reserva
+ * @access Admin/Employee: cualquiera | Customer: solo propias
+ * @param {string} id - ID de la reserva
+ * @body {string} endDate - Nueva fecha de fin
+ */
 router.put('/:id/extend', extendBooking)
 
-// DELETE /api/bookings/:id
+/**
+ * @route DELETE /api/bookings/:id
+ * @description Elimina permanentemente una reserva
+ * @access Admin/Employee: cualquiera | Customer: solo propias
+ * @param {string} id - ID de la reserva
+ */
 router.delete('/:id', deleteBooking)
 
 export default router

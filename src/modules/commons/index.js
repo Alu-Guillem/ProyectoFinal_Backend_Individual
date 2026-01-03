@@ -1,9 +1,23 @@
 /**
+ * @fileoverview Utilidades comunes para manejo de fechas
+ * @module commons
  *
- * @param {string} value
- * @returns {Date|null}
+ * Proporciona funciones para parsear y formatear fechas
+ * en el formato DD/MM/YYYY usado en la aplicación.
  */
 
+/**
+ * Parsea una fecha en formato DD/MM/YYYY a objeto Date
+ *
+ * @function parseDate
+ * @param {string} value - Fecha en formato DD/MM/YYYY
+ * @returns {Date|null} Objeto Date si el formato es válido, null en caso contrario
+ *
+ * @example
+ * parseDate('25/12/2024') // Date object: 2024-12-25
+ * parseDate('31/02/2024') // null (fecha inválida)
+ * parseDate('invalid')    // null
+ */
 export function parseDate(value) {
   if (typeof value !== 'string') return null
 
@@ -19,10 +33,17 @@ export function parseDate(value) {
 
   return date
 }
+
 /**
+ * Formatea un objeto Date a string DD/MM/YYYY
  *
- * @param {Date} date
- * @returns {string|null}
+ * @function formatDate
+ * @param {Date} date - Objeto Date a formatear
+ * @returns {string|null} Fecha formateada o null si el parámetro no es Date
+ *
+ * @example
+ * formatDate(new Date(2024, 11, 25)) // '25/12/2024'
+ * formatDate('invalid')               // null
  */
 export function formatDate(date) {
   if (!(date instanceof Date)) return null

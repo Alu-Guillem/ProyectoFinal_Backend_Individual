@@ -1,14 +1,45 @@
+/**
+ * @fileoverview Servicio de envío de correos electrónicos
+ * @module libs/mailing
+ *
+ * Proporciona funcionalidades para enviar correos electrónicos
+ * usando plantillas HTML con variables dinámicas.
+ *
+ * Características:
+ * - Caché de plantillas para optimizar rendimiento
+ * - Soporte para variables dinámicas {{variable}}
+ * - Pool de conexiones SMTP para envíos masivos
+ *
+ * @requires nodemailer
+ * @requires fs/promises
+ * @requires #r/constants.js
+ */
+
 import { MAIL_HOST, MAIL_PASS, MAIL_PORT, MAIL_USER } from '#r/constants.js'
 import nodemailer from 'nodemailer'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-// Cache de plantillas: nombre -> contenido HTML
+/**
+ * Caché de plantillas: nombre -> contenido HTML
+ * @type {Map<string, string>}
+ * @private
+ */
 const templateCache = new Map()
-// Lista de nombres disponibles (derivada de la carpeta)
+
+/**
+ * Lista de nombres de plantillas disponibles
+ * @type {string[]}
+ * @private
+ */
 let emailTemplates = []
 
+/**
+ * Transportador de Nodemailer configurado con pool de conexiones
+ * @type {import('nodemailer').Transporter}
+ * @private
+ */
 const transporter = nodemailer.createTransport({
   // @ts-ignore
   host: MAIL_HOST,
@@ -21,12 +52,33 @@ const transporter = nodemailer.createTransport({
   },
 })
 
+/**
+ * Obtiene la ruta al directorio de plantillas
+ * @function getTemplatesDir
+ * @returns {string} Ruta absoluta al directorio de plantillas
+ * @private
+ */
 function getTemplatesDir() {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
   return path.join(__dirname, 'templates')
 }
 
+/**
+ * Inicializa el servicio de correo electrónico
+ *
+ * Verifica la conexión SMTP y carga la lista de plantillas disponibles.
+ * Debe llamarse una vez al iniciar la aplicación.
+ *
+ * @async
+ * @function connectEmail
+ *
+ * @example
+ * import { connectEmail } from '#libs/mailing'
+ *
+ * // Al iniciar la aplicación
+ * await connectEmail()
+ */
 export async function connectEmail() {
   try {
     await transporter.verify()
@@ -49,10 +101,26 @@ export async function connectEmail() {
 }
 
 /**
- * @param {string} to
- * @param {string} subject
- * @param {string} template
- * @param {{[key: string]: string}} variables
+ * Envía un correo electrónico usando una plantilla HTML
+ *
+ * @async
+ * @function sendEmail
+ * @param {string} to - Dirección de correo del destinatario
+ * @param {string} subject - Asunto del correo
+ * @param {string} template - Nombre de la plantilla (sin extensión .html)
+ * @param {Object<string, string>} variables - Variables a reemplazar en la plantilla
+ * @returns {Promise<import('nodemailer').SentMessageInfo>} Información del envío
+ * @throws {Error} Si la plantilla no existe
+ *
+ * @example
+ * import { sendEmail } from '#libs/mailing'
+ *
+ * await sendEmail(
+ *   'usuario@example.com',
+ *   'Bienvenido a TryCatchers',
+ *   'welcome',
+ *   { name: 'Juan', email: 'juan@example.com' }
+ * )
  */
 export async function sendEmail(to, subject, template, variables) {
   if (!emailTemplates.includes(template)) {
@@ -72,7 +140,13 @@ export async function sendEmail(to, subject, template, variables) {
 }
 
 /**
- * @param {string} templateName
+ * Obtiene el contenido de una plantilla (con caché)
+ *
+ * @async
+ * @function getTemplateContent
+ * @param {string} templateName - Nombre de la plantilla
+ * @returns {Promise<string>} Contenido HTML de la plantilla
+ * @private
  */
 async function getTemplateContent(templateName) {
   // Usar caché para evitar IO repetido
@@ -84,8 +158,17 @@ async function getTemplateContent(templateName) {
 }
 
 /**
- * @param {string} templateName
- * @param {{[key: string]: string}} variables
+ * Renderiza una plantilla reemplazando las variables
+ *
+ * Busca patrones {{variable}} en la plantilla y los reemplaza
+ * con los valores proporcionados.
+ *
+ * @async
+ * @function renderTemplate
+ * @param {string} templateName - Nombre de la plantilla
+ * @param {Object<string, string>} variables - Variables a reemplazar
+ * @returns {Promise<string>} HTML con variables reemplazadas
+ * @private
  */
 async function renderTemplate(templateName, variables) {
   let templateContent = await getTemplateContent(templateName)
@@ -97,21 +180,46 @@ async function renderTemplate(templateName, variables) {
   return templateContent
 }
 
-/** Lista las plantillas disponibles */
+/**
+ * Lista las plantillas de correo disponibles
+ *
+ * @function listEmailTemplates
+ * @returns {string[]} Array con los nombres de las plantillas disponibles
+ *
+ * @example
+ * const templates = listEmailTemplates()
+ * console.log(templates) // ['welcome', 'password-recovery', 'booking-confirmation', ...]
+ */
 export function listEmailTemplates() {
   return [...emailTemplates]
 }
 
 /**
  * Verifica si una plantilla existe
- * @param {string} name
+ *
+ * @function hasEmailTemplate
+ * @param {string} name - Nombre de la plantilla a verificar
+ * @returns {boolean} true si la plantilla existe
+ *
+ * @example
+ * if (hasEmailTemplate('welcome')) {
+ *   await sendEmail(to, 'Bienvenido', 'welcome', { name: 'Usuario' })
+ * }
  */
 export function hasEmailTemplate(name) {
   return emailTemplates.includes(name)
 }
 
 /**
- * @param {string} to
+ * Envía correos de prueba con todas las plantillas disponibles
+ *
+ * Útil para verificar que todas las plantillas funcionan correctamente.
+ *
+ * @function testTemplates
+ * @param {string} to - Dirección de correo para las pruebas
+ *
+ * @example
+ * testTemplates('admin@example.com')
  */
 export function testTemplates(to) {
   emailTemplates.forEach(async template => {

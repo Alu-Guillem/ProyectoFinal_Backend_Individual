@@ -5,8 +5,20 @@ import { isAvailable } from './utils/index.js'
 import { isValidObjectId } from 'mongoose'
 
 /**
- * @param {import('types').AuthenticatedRequest} req
- * @param {import('express').Response} res
+ * Obtiene todas las reservas según el rol del usuario
+ *
+ * @async
+ * @function getBookings
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Admin/employee pueden ver todas las reservas.
+ * Customers solo pueden ver sus propias reservas.
+ *
+ * @response 200 - Array de reservas encontradas
+ * @response 404 - No se encontraron reservas
+ * @response 500 - Error del servidor
  */
 export async function getBookings(req, res) {
   try {
@@ -30,8 +42,33 @@ export async function getBookings(req, res) {
 }
 
 /**
- * @param {import('types').AuthenticatedRequest} req
- * @param {import('express').Response} res
+ * Crea una nueva reserva
+ *
+ * @async
+ * @function createNewBooking
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Customers crean reservas para sí mismos (userId se asigna automáticamente).
+ * Admin/employee pueden crear reservas para cualquier usuario.
+ * Empleados no pueden crear reservas para sí mismos.
+ *
+ * Validaciones:
+ * - Fechas válidas (inicio < fin, no en el pasado)
+ * - Habitación existente y disponible
+ * - Ocupantes dentro del límite de la habitación
+ *
+ * @bodyParam {string} roomId - ID de la habitación (requerido)
+ * @bodyParam {string} startDate - Fecha de inicio (requerido, formato YYYY-MM-DD)
+ * @bodyParam {string} endDate - Fecha de fin (requerido, formato YYYY-MM-DD)
+ * @bodyParam {number} occupants - Número de ocupantes (requerido)
+ * @bodyParam {string} [userId] - ID del usuario (solo admin/employee)
+ *
+ * @response 201 - Reserva creada exitosamente con cálculos de precio
+ * @response 400 - Datos inválidos, fechas incorrectas, ocupantes excedidos o habitación no disponible
+ * @response 404 - Habitación no encontrada
+ * @response 500 - Error del servidor
  */
 export async function createNewBooking(req, res) {
   try {
@@ -129,8 +166,23 @@ export async function createNewBooking(req, res) {
 }
 
 /**
- * @param {import('types').AuthenticatedRequest} req
- * @param {import('express').Response} res
+ * Obtiene una reserva específica por ID
+ *
+ * @async
+ * @function getOneBooking
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Admin/employee pueden ver cualquier reserva.
+ * Customers solo pueden ver sus propias reservas.
+ *
+ * @routeParam {string} id - ID de la reserva a obtener
+ *
+ * @response 200 - Reserva encontrada
+ * @response 400 - ID de reserva inválido
+ * @response 404 - Reserva no encontrada
+ * @response 500 - Error del servidor
  */
 export async function getOneBooking(req, res) {
   try {
@@ -155,8 +207,34 @@ export async function getOneBooking(req, res) {
 }
 
 /**
- * @param {import('types').AuthenticatedRequest} req
- * @param {import('express').Response} res
+ * Actualiza una reserva existente
+ *
+ * @async
+ * @function updateBooking
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Permite modificar fechas y ocupantes de una reserva activa.
+ * Admin/employee pueden modificar cualquier reserva.
+ * Customers solo pueden modificar sus propias reservas.
+ *
+ * Restricciones:
+ * - No se pueden modificar reservas canceladas
+ * - Las fechas solo pueden modificarse en un rango de ±15 días
+ * - No se puede mover a fechas pasadas
+ * - Se verifica disponibilidad de la habitación
+ *
+ * @routeParam {string} id - ID de la reserva a actualizar
+ *
+ * @bodyParam {string} [startDate] - Nueva fecha de inicio (formato YYYY-MM-DD)
+ * @bodyParam {string} [endDate] - Nueva fecha de fin (formato YYYY-MM-DD)
+ * @bodyParam {number} [occupants] - Nuevo número de ocupantes
+ *
+ * @response 200 - Reserva actualizada con precios recalculados
+ * @response 400 - ID inválido, datos no proporcionados, reserva cancelada, fechas inválidas o habitación no disponible
+ * @response 404 - Reserva o habitación no encontrada
+ * @response 500 - Error del servidor
  */
 export async function updateBooking(req, res) {
   try {
@@ -272,8 +350,25 @@ export async function updateBooking(req, res) {
 }
 
 /**
- * @param {import('types').AuthenticatedRequest} req
- * @param {import('express').Response} res
+ * Cancela una reserva existente
+ *
+ * @async
+ * @function cancelBooking
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Cambia el estado de la reserva a 'canceled'.
+ * Admin/employee pueden cancelar cualquier reserva.
+ * Customers solo pueden cancelar sus propias reservas.
+ * La reserva no se elimina, solo se marca como cancelada.
+ *
+ * @routeParam {string} id - ID de la reserva a cancelar
+ *
+ * @response 200 - Reserva cancelada correctamente
+ * @response 400 - ID de reserva inválido
+ * @response 404 - Reserva no encontrada
+ * @response 500 - Error del servidor
  */
 export async function cancelBooking(req, res) {
   try {
@@ -301,8 +396,32 @@ export async function cancelBooking(req, res) {
 }
 
 /**
- * @param {import('types').AuthenticatedRequest} req
- * @param {import('express').Response} res
+ * Extiende la fecha de fin de una reserva
+ *
+ * @async
+ * @function extendBooking
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Permite extender una reserva activa a una fecha posterior.
+ * Admin/employee pueden extender cualquier reserva.
+ * Customers solo pueden extender sus propias reservas.
+ *
+ * Validaciones:
+ * - La reserva no debe estar cancelada
+ * - La nueva fecha debe ser posterior a la actual
+ * - Se verifica disponibilidad para el periodo extendido
+ * - Se recalculan noches y precio total
+ *
+ * @routeParam {string} id - ID de la reserva a extender
+ *
+ * @bodyParam {string} endDate - Nueva fecha de fin (requerido, formato YYYY-MM-DD)
+ *
+ * @response 200 - Reserva extendida con precios actualizados
+ * @response 400 - ID inválido, fecha no proporcionada, reserva cancelada, fecha inválida o habitación no disponible
+ * @response 404 - Reserva no encontrada
+ * @response 500 - Error del servidor
  */
 export async function extendBooking(req, res) {
   try {
@@ -369,8 +488,24 @@ export async function extendBooking(req, res) {
 }
 
 /**
- * @param {import('types').AuthenticatedRequest} req
- * @param {import('express').Response} res
+ * Elimina una reserva de forma permanente
+ *
+ * @async
+ * @function deleteBooking
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Elimina permanentemente una reserva de la base de datos.
+ * Admin/employee pueden eliminar cualquier reserva.
+ * Customers solo pueden eliminar sus propias reservas.
+ *
+ * @routeParam {string} id - ID de la reserva a eliminar
+ *
+ * @response 200 - Reserva eliminada correctamente
+ * @response 400 - ID de reserva inválido
+ * @response 404 - Reserva no encontrada
+ * @response 500 - Error del servidor
  */
 export async function deleteBooking(req, res) {
   try {

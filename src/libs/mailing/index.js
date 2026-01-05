@@ -97,7 +97,7 @@ export async function connectEmail() {
     console.error('Error al cargar las plantillas de correo:', err)
   }
 
-  testTemplates('test@example.com')
+  // testTemplates('test@example.com')
 }
 
 /**

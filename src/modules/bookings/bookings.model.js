@@ -88,6 +88,9 @@ export const BookingDatabaseSchema = new Schema(
   {
     toJSON: {
       transform(_doc, ret) {
+        ret.bookingId = ret._id.toString()
+        delete ret._id
+        delete ret.__v
         ret.startDate = formatDate(ret.startDate)
         ret.endDate = formatDate(ret.endDate)
         ret.bookingDate = formatDate(ret.bookingDate)

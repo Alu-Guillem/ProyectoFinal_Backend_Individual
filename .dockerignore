@@ -1,0 +1,39 @@
+# Dependencias
+node_modules
+npm-debug.log*
+
+# Archivos de desarrollo
+.git
+.gitignore
+.env
+.env.*
+*.md
+!readme.md
+
+# Archivos de configuración IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Archivos de test
+coverage
+.nyc_output
+*.test.js
+*.spec.js
+__tests__
+
+# Archivos temporales
+*.log
+tmp
+temp
+.cache
+
+# Docker
+Dockerfile*
+docker-compose*
+.docker
+
+# OS
+.DS_Store
+Thumbs.db

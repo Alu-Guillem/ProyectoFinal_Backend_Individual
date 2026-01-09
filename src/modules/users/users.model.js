@@ -11,6 +11,22 @@ export const UserSchema = new Schema({
     enum: ['admin', 'employee', 'customer'],
     default: 'customer',
   },
+  firstName: {
+    type: String,
+    required: true,
+  },
+  lastName: {
+    type: String,
+    required: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  dni: {
+    type: String,
+    unique: true,
+  },
 })
 
 export const User = model('User', UserSchema)

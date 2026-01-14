@@ -303,3 +303,26 @@ export const isValidDate = createValidator((field, value) => {
   const date = new Date(year, month - 1, day)
   if (isNaN(date.getTime())) return `El campo '${field}' debe ser una fecha válida`
 })
+
+/**
+ * Valida que un valor tenga formato de DNI español válido (8 dígitos seguidos de una letra)
+ * @type {import('types').commonValidation}
+ * @example
+ * isValidDNI('dni')('12345678Z') // true
+ * isValidDNI('dni')('12345678z') // true
+ * isValidDNI('dni')('12345678B') // Error: El campo "dni" es inválido
+ * isValidDNI('dni')('1234567Z')  // Error: El campo "dni" debe tener formato 12345678Z
+ */
+export const isValidDNI = createValidator((field, value) => {
+  if (isEmpty(value)) return
+  value = value.toUpperCase()
+  const regex = /^(\d{8})([A-Z])$/
+  const match = String(value).match(regex)
+  if (!match) return `El campo '${field}' debe tener formato 12345678Z`
+
+  const letters = 'TRWAGMYFPDXBNJZSQVHLCKE'
+
+  const number = parseInt(match[1], 10)
+  const letter = match[2]
+  if (letters[number % 23] !== letter) return `El campo '${field}' es inválido`
+})

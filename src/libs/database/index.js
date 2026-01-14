@@ -9,7 +9,7 @@
  * @requires #c (constantes de configuración)
  */
 
-import { DB_USER, DB_PASS, DB_HOST, DB_NAME } from '#c'
+import { DB_URI } from '#c'
 import mongoose from 'mongoose'
 
 /**
@@ -17,7 +17,7 @@ import mongoose from 'mongoose'
  * @constant {string}
  * @private
  */
-const URI = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/?appName=${DB_NAME}`
+const URI = DB_URI
 
 /**
  * Establece la conexión con la base de datos MongoDB

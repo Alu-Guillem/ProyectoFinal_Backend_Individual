@@ -8,6 +8,21 @@ import {
   validateEmployee,
 } from './users.model.js'
 
+import { isValidObjectId } from 'mongoose'
+
+export async function getUsers(req, res) {
+  try {
+    const users = await User.find()
+
+    if (users.length === 0) return res.status(404).json({ message: 'No se encontraron usuarios' })
+
+    res.status(200).json(users)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
 /**
  * Crea un nuevo Employee
  *
@@ -138,6 +153,44 @@ export async function createCustomer(req, res) {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'El correo electrónico ya está registrado' })
     }
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+export async function getOneUser(req, res) {
+  try {
+    const { id } = req.params
+
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de usuario inválido' })
+
+    const filter = { _id: id }
+
+    const user = await User.findOne(filter)
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' })
+
+    res.status(200).json(user)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+export async function deleteUser(req, res) {
+  try {
+    const { id } = req.params
+
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID del usuario inválido' })
+
+    const filter = { _id: id }
+
+    const users = await User.findOne(filter)
+    if (!users) return res.status(404).json({ message: 'Usuario no encontrado' })
+
+    await User.deleteOne({ _id: id })
+
+    res.status(200).json({ message: 'Ussuario eliminado correctamente' })
+  } catch (error) {
+    console.error(error)
     res.status(500).json({ message: 'Error del servidor' })
   }
 }

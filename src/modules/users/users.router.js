@@ -1,8 +1,21 @@
 import { Router } from 'express'
-import { createCustomer, createEmployee } from '#modules/users/users.controller.js'
+import {
+  createCustomer,
+  createEmployee,
+  deleteUser,
+  getOneUser,
+  getUsers,
+} from '#modules/users/users.controller.js'
 const router = Router()
 
 router.post('/', createCustomer)
 
 router.post('/employee', createEmployee)
+
+router.get('/', getUsers)
+
+router.get('/:id', getOneUser)
+
+router.delete('/:id', deleteUser)
+
 export default router

@@ -7,6 +7,7 @@ import {
   minLength,
   isValidEmail,
   isValidDNI,
+  isValidEmployeeRole,
 } from '#libs/validation/index.js'
 /**
  * Esquema de Usuario (UserSchema) para MongoDB utilizando Mongoose.
@@ -58,12 +59,7 @@ export const UserSchema = new Schema(
  * @property {string} role - El rol del empleado. Puede ser 'admin' o 'employee'. Es obligatorio.
  */
 const EmployeeSchema = new Schema(
-  {
-    isAdmin: {
-      type: Boolean,
-      default: false,
-    },
-  },
+  {},
   {
     toJSON: {
       transform(_doc, ret) {
@@ -125,14 +121,16 @@ export const User = model('User', UserSchema)
 
 export const Customer = User.discriminator('customer', CustomerSchema)
 
+export const Admin = User.discriminator('admin', EmployeeSchema)
+
 export const Employee = User.discriminator('employee', EmployeeSchema)
 
 export const EmployeeInputSchema = {
   email: [isRequired('email del usuario'), isValidEmail('email')],
   firstName: [isRequired('nombre del usuario')],
   lastName: [isRequired('apellidos del usuario')],
-  password: [isRequired('contraseña del usuario'), minLength('password', 8)],
-  role: [isRequired('rol del usuario')],
+  password: [isRequired('contraseña del usuario'), minLength('contraseña', 8)],
+  role: [isRequired('rol del usuario'), isValidEmployeeRole('rol')],
 }
 
 export const CustomerInputSchema = {
@@ -145,6 +143,22 @@ export const CustomerInputSchema = {
   dni: [isRequired('dni del usuario'), isValidDNI('dni')],
 }
 
-export const validateCustomer = userData => {
-  return validateSchema(CustomerInputSchema, userData)
+/**
+ * Valida los datos de un cliente
+ * @param {Object} customerData - Datos de la reserva a validar
+ * @returns {Object} - true si todas las validaciones pasan
+ * @throws {Error} - Lanza un error si alguna validación falla
+ */
+export const validateCustomer = customerData => {
+  return validateSchema(CustomerInputSchema, customerData)
+}
+
+/**
+ * Valida los datos de un empleado
+ * @param {Object} employeeData - Datos de la reserva a validar
+ * @returns {Object} - true si todas las validaciones pasan
+ * @throws {Error} - Lanza un error si alguna validación falla
+ */
+export const validateEmployee = employeeData => {
+  return validateSchema(EmployeeInputSchema, employeeData)
 }

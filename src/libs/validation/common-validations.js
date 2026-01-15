@@ -326,3 +326,17 @@ export const isValidDNI = createValidator((field, value) => {
   const letter = match[2]
   if (letters[number % 23] !== letter) return `El campo '${field}' es inválido`
 })
+
+/**
+ * Valida que un valor sea un rol de empleado válido ('admin' o 'employee')
+ * @type {import('types').commonValidation}
+ * @example
+ * isValidEmployeeRole('rol')('admin') // true
+ * isValidEmployeeRole('rol')('employee') // true
+ * isValidEmployeeRole('rol')('manager') // Error: El campo "rol" solo puede ser 'admin' o 'employee'
+ */
+export const isValidEmployeeRole = createValidator((field, value) => {
+  if (isEmpty(value)) return
+  if (value !== 'admin' && value !== 'employee')
+    return `El campo '${field}' solo puede ser 'admin' o 'employee'`
+})

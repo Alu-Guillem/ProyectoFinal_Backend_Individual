@@ -162,3 +162,22 @@ export const validateCustomer = customerData => {
 export const validateEmployee = employeeData => {
   return validateSchema(EmployeeInputSchema, employeeData)
 }
+
+/**
+ * @type {import('types').ValidationSchema}
+ */
+export const UserUpdateSchema = {
+  password: [minLength('contraseña', 8)],
+
+}
+
+/**
+ * Valida los datos de actualización de una reserva
+ * @param {Object} userData - Datos a validar
+ * @returns {Object} - Datos validados
+ * @throws {Error} - ValidationError
+ */
+export const validateUserUpdate = userData => {
+  return validateSchema(UserUpdateSchema, userData)
+}
+

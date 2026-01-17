@@ -6,6 +6,7 @@ import {
   User,
   validateCustomer,
   validateEmployee,
+  validateUserUpdate,
 } from './users.model.js'
 
 import { isValidObjectId } from 'mongoose'
@@ -52,13 +53,14 @@ export async function getUsers(req, res) {
  */
 export async function createEmployee(req, res) {
   try {
+    const { role, userId } = req.session
     const userData = req.body
 
     if (!userData) {
       return res.status(400).json({ message: 'Datos de usuarios no proporcionados' })
     }
 
-    const role = userData.role
+    const employeeRole = userData.role
 
     let validatedEmployee
     try {
@@ -68,8 +70,8 @@ export async function createEmployee(req, res) {
     }
 
     let Model
-    if (role === 'admin') Model = Admin
-    if (role === 'employee') Model = Employee
+    if (employeeRole === 'admin') Model = Admin
+    if (employeeRole === 'employee') Model = Employee
 
     const newEmployee = new Model({
       ...validatedEmployee,
@@ -157,6 +159,25 @@ export async function createCustomer(req, res) {
   }
 }
 
+/**
+ * Obtiene un usuario por su ID
+ *
+ * @async
+ * @function getOneUser
+ * @param {import('types').AuthenticatedRequest} req - Request de Express
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Obtiene la información de un usuario específico por su ID.
+ *
+ * @response 200 - Usuario encontrado
+ * @response 400 - ID de usuario inválido
+ * @response 404 - Usuario no encontrado
+ * @response 500 - Error interno del servidor
+ *
+ * Validaciones:
+ * - ID de usuario válido
+ */
 export async function getOneUser(req, res) {
   try {
     const { id } = req.params
@@ -175,6 +196,26 @@ export async function getOneUser(req, res) {
   }
 }
 
+/**
+ * Elimina un usuario por su ID
+ *
+ * @async
+ * @function deleteUser
+ * @param {import('types').AuthenticatedRequest} req - Request de Express
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Elimina un usuario específico por su ID.
+ *
+ *
+ * @response 200 - Usuario eliminado correctamente
+ * @response 400 - ID del usuario inválido
+ * @response 404 - Usuario no encontrado
+ * @response 500 - Error interno del servidor
+ *
+ * Validaciones:
+ * - ID de usuario válido
+ */
 export async function deleteUser(req, res) {
   try {
     const { id } = req.params
@@ -189,6 +230,64 @@ export async function deleteUser(req, res) {
     await User.deleteOne({ _id: id })
 
     res.status(200).json({ message: 'Ussuario eliminado correctamente' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+/**
+ * Actualiza la información de un usuario
+ *
+ * @async
+ * @function updateUser
+ * @param {import('types').AuthenticatedRequest} req - Request de Express
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Actualiza la contraseña del usuario. Solo el propio usuario puede actualizar su información.
+ *
+ * @bodyParam {string} password - Nueva contraseña (requerida, mínimo 8 caracteres)
+ *
+ * @response 200 - Usuario actualizado correctamente
+ * @response 400 - Datos inválidos o ID inválido
+ * @response 403 - No tienes permiso para actualizar este usuario
+ * @response 404 - Usuario no encontrado
+ * @response 500 - Error interno del servidor
+ *
+ * Validaciones:
+ * - Solo el usuario autenticado puede actualizar su propio perfil
+ * - Password mínimo 8 caracteres
+ * - ID de usuario válido
+ */
+export async function updateUser(req, res) {
+  try {
+    const { userId } = req.session
+    const { id } = req.params
+
+    if (userId !== id) {
+      return res.status(403).json({ message: 'No tienes permiso para actualizar este usuario' })
+    }
+
+    let validatedData
+    try {
+      validatedData = validateUserUpdate(req.body)
+    } catch (err) {
+      return res.status(400).json(err)
+    }
+
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
+
+    const filter = { _id: id }
+
+    const { password } = validatedData
+
+    const user = await User.findOne(filter)
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' })
+
+    user.password = password
+    const updatedUser = await user.save()
+    res.status(200).json(updatedUser)
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })

@@ -5,6 +5,7 @@ import {
   deleteUser,
   getOneUser,
   getUsers,
+  updateUser,
 } from '#modules/users/users.controller.js'
 const router = Router()
 
@@ -17,5 +18,7 @@ router.get('/', getUsers)
 router.get('/:id', getOneUser)
 
 router.delete('/:id', deleteUser)
+
+router.patch('/:id', updateUser)
 
 export default router

@@ -11,4 +11,5 @@ export const {
   MAIL_PORT = 587,
   MAIL_USER = 'default_user',
   MAIL_PASS = 'default_password',
+  SALT_ROUNDS = 10,
 } = process.env

@@ -9,6 +9,9 @@ import {
   isValidDNI,
   isValidEmployeeRole,
 } from '#libs/validation/index.js'
+
+import bcrypt from 'bcrypt'
+
 /**
  * Esquema de Usuario (UserSchema) para MongoDB utilizando Mongoose.
  * Este esquema representa un usuario genérico con campos comunes.
@@ -18,7 +21,7 @@ import {
  * @property {string} role - El rol del usuario. Puede ser 'admin', 'employee' o 'customer'. Por defecto es 'customer'.
  * @property {string} name - El nombre del usuario. Es obligatorio.
  * @property {string} lastName - El apellido del usuario. Es obligatorio.
- * @property {string} password - La contraseña del usuario. Es obligatoria.
+ * @property {string} password - La contraseña del usuario. Es obligatoria, no sera mostrada con un /GET.
  */
 export const UserSchema = new Schema(
   {
@@ -43,6 +46,7 @@ export const UserSchema = new Schema(
     password: {
       type: String,
       required: true,
+      select: false,
     },
   },
   {
@@ -125,6 +129,20 @@ export const Admin = User.discriminator('admin', EmployeeSchema)
 
 export const Employee = User.discriminator('employee', EmployeeSchema)
 
+/**
+ * Compara una contraseña en texto plano con el hash almacenado en la base de datos.
+ * * @async
+ * @method comparePassword
+ * @memberof UserSchema
+ * @param {string} candidatePassword - La contraseña proporcionada por el usuario (sin cifrar).
+ * @returns {Promise<boolean>} Devuelve true si coinciden, false en caso contrario.
+ * @example
+ * const isMatch = await user.comparePassword('12345678');
+ */
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password)
+}
+
 export const EmployeeInputSchema = {
   email: [isRequired('email del usuario'), isValidEmail('email')],
   firstName: [isRequired('nombre del usuario')],
@@ -168,7 +186,9 @@ export const validateEmployee = employeeData => {
  */
 export const UserUpdateSchema = {
   password: [minLength('contraseña', 8)],
-
+  firstName: [],
+  lastName: [],
+  birthDate: [isValidDate('fecha de nacimiento')],
 }
 
 /**
@@ -180,4 +200,3 @@ export const UserUpdateSchema = {
 export const validateUserUpdate = userData => {
   return validateSchema(UserUpdateSchema, userData)
 }
-

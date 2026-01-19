@@ -10,6 +10,7 @@ import {
 } from './users.model.js'
 
 import { isValidObjectId } from 'mongoose'
+import { hashPassword } from './utils/index.js'
 
 export async function getUsers(req, res) {
   try {
@@ -39,7 +40,7 @@ export async function getUsers(req, res) {
  * @bodyParam {string} email      - Email del usuario (requerido, único)
  * @bodyParam {string} firstName  - Nombre del usuario (requerido)
  * @bodyParam {string} lastName   - Apellidos del usuario (requerido)
- * @bodyParam {string} password   - Contraseña (requerida, mínimo 8 caracteres)
+ * @bodyParam {string} password   - Contraseña (requerida, mínimo 8 caracteres), será cifrada antes de guardar
  * @bodyParam {string} role       - Rol del empleado ('admin' | 'employee', requerido)
  *
  * @response 201 - Empleado creado correctamente
@@ -69,12 +70,15 @@ export async function createEmployee(req, res) {
       return res.status(400).json(err)
     }
 
+    const password = await hashPassword(validatedEmployee.password)
+
     let Model
     if (employeeRole === 'admin') Model = Admin
     if (employeeRole === 'employee') Model = Employee
 
     const newEmployee = new Model({
       ...validatedEmployee,
+      password,
     })
 
     const employeeSaved = await newEmployee.save()
@@ -103,7 +107,7 @@ export async function createEmployee(req, res) {
  * @bodyParam {string} email      - Email del usuario (requerido, único)
  * @bodyParam {string} firstName  - Nombre del usuario (requerido)
  * @bodyParam {string} lastName   - Apellidos del usuario (requerido)
- * @bodyParam {string} password  - Contraseña (requerida, mínimo 8 caracteres)
+ * @bodyParam {string} password  - Contraseña (requerida, mínimo 8 caracteres), será cifrada antes de guardar
  * @bodyParam {string} birthDate - Fecha de nacimiento (YYYY-MM-DD, requerido)
  * @bodyParam {string} gender    - 'masculino' | 'femenino' | 'prefiero no decirlo' (requerido)
  * @bodyParam {string} dni       - DNI del usuario (requerido)
@@ -138,6 +142,7 @@ export async function createCustomer(req, res) {
       return res.status(400).json(err)
     }
     const birthDate = parseDate(validatedCustomer.birthDate)
+    const password = await hashPassword(validatedCustomer.password)
 
     const age = getAge(birthDate)
     if (age < 18) {
@@ -147,6 +152,7 @@ export async function createCustomer(req, res) {
     const newCustomer = new Customer({
       ...validatedCustomer,
       birthDate,
+      password,
     })
 
     const customerSaved = await newCustomer.save()
@@ -258,16 +264,23 @@ export async function deleteUser(req, res) {
  * Validaciones:
  * - Solo el usuario autenticado puede actualizar su propio perfil
  * - Password mínimo 8 caracteres
+ * - Fecha de nacimiento, mayor de 18 años
+ * - Nombre
+ * - Apellidos
  * - ID de usuario válido
  */
 export async function updateUser(req, res) {
   try {
-    const { userId } = req.session
+    const { userId, role } = req.session
     const { id } = req.params
 
     if (userId !== id) {
       return res.status(403).json({ message: 'No tienes permiso para actualizar este usuario' })
     }
+
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de usuario inválido' })
+
+    const filter = { _id: id }
 
     let validatedData
     try {
@@ -276,16 +289,27 @@ export async function updateUser(req, res) {
       return res.status(400).json(err)
     }
 
-    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
+    const { password, firstName, lastName } = validatedData
+    const birthDate = parseDate(validatedData.birthDate)
 
-    const filter = { _id: id }
+    let Model
+    if (role === 'customer') Model = Customer
+    if (role === 'employee') Model = Employee
+    if (role === 'admin') Model = Admin
 
-    const { password } = validatedData
-
-    const user = await User.findOne(filter)
+    const user = await Model.findOne(filter)
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' })
 
-    user.password = password
+    if (password !== undefined) user.password = password
+    if (firstName !== undefined) user.firstName = firstName
+    if (lastName !== undefined) user.lastName = lastName
+    if (birthDate !== undefined && role === 'customer') {
+      const age = getAge(birthDate)
+      if (age < 18) {
+        return res.status(400).json({ message: 'Tu fecha no es valida, has de ser mayor de edad' })
+      }
+      user.birthDate = birthDate
+    }
     const updatedUser = await user.save()
     res.status(200).json(updatedUser)
   } catch (error) {

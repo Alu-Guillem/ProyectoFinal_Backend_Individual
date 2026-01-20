@@ -262,8 +262,7 @@ export async function deleteUser(req, res) {
  * @response 500 - Error interno del servidor
  *
  * Validaciones:
- * - Solo el usuario autenticado puede actualizar su propio perfil
- * - Password mínimo 8 caracteres
+ * - Password mínimo 8 caracteres, sera de nuevo hasheada
  * - Fecha de nacimiento, mayor de 18 años
  * - Nombre
  * - Apellidos
@@ -274,13 +273,7 @@ export async function updateUser(req, res) {
     const { userId, role } = req.session
     const { id } = req.params
 
-    if (userId !== id) {
-      return res.status(403).json({ message: 'No tienes permiso para actualizar este usuario' })
-    }
-
     if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de usuario inválido' })
-
-    const filter = { _id: id }
 
     let validatedData
     try {
@@ -289,26 +282,24 @@ export async function updateUser(req, res) {
       return res.status(400).json(err)
     }
 
-    const { password, firstName, lastName } = validatedData
-    const birthDate = parseDate(validatedData.birthDate)
+    const { password, firstName, lastName, birthDate } = validatedData
 
-    let Model
-    if (role === 'customer') Model = Customer
-    if (role === 'employee') Model = Employee
-    if (role === 'admin') Model = Admin
-
-    const user = await Model.findOne(filter)
+    const user = await User.findById(id)
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' })
 
-    if (password !== undefined) user.password = password
+    if (password !== undefined) {
+      user.password = await hashPassword(password)
+    }
     if (firstName !== undefined) user.firstName = firstName
     if (lastName !== undefined) user.lastName = lastName
-    if (birthDate !== undefined && role === 'customer') {
-      const age = getAge(birthDate)
+    if (birthDate !== undefined && user.role === 'customer') {
+      const parsedBirthDate = parseDate(birthDate)
+      const age = getAge(parsedBirthDate)
       if (age < 18) {
         return res.status(400).json({ message: 'Tu fecha no es valida, has de ser mayor de edad' })
       }
-      user.birthDate = birthDate
+
+      user.set('birthDate', parsedBirthDate)
     }
     const updatedUser = await user.save()
     res.status(200).json(updatedUser)

@@ -69,6 +69,7 @@ const EmployeeSchema = new Schema(
       transform(_doc, ret) {
         ret.userId = ret._id.toString()
         delete ret._id
+        delete ret.password
         delete ret.__v
         return ret
       },
@@ -114,6 +115,7 @@ const CustomerSchema = new Schema(
         ret.userId = ret._id.toString()
         delete ret._id
         delete ret.__v
+        delete ret.password
         ret.birthDate = formatDate(ret.birthDate)
         return ret
       },

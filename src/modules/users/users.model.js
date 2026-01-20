@@ -131,20 +131,6 @@ export const Admin = User.discriminator('admin', EmployeeSchema)
 
 export const Employee = User.discriminator('employee', EmployeeSchema)
 
-/**
- * Compara una contraseña en texto plano con el hash almacenado en la base de datos.
- * * @async
- * @method comparePassword
- * @memberof UserSchema
- * @param {string} candidatePassword - La contraseña proporcionada por el usuario (sin cifrar).
- * @returns {Promise<boolean>} Devuelve true si coinciden, false en caso contrario.
- * @example
- * const isMatch = await user.comparePassword('12345678');
- */
-UserSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password)
-}
-
 export const EmployeeInputSchema = {
   email: [isRequired('email del usuario'), isValidEmail('email')],
   firstName: [isRequired('nombre del usuario')],

@@ -3,18 +3,28 @@ import jwt from 'jsonwebtoken'
 
 export function sessionMiddleware(req, res, next) {
   const { authorization } = req.headers
-  if (!authorization) next()
-
-  /** @type {import('types').Session} */
-  // @ts-ignore
-  const payload = jwt.verify(authorization, JWT_SECRET)
-
-  req.session = {
-    userId: payload.userId,
-    role: payload.role,
+  if (!authorization || !authorization.startsWith('Bearer ')) {
+    req.session = null
+    return next()
   }
 
-  next()
+  // 🔹 Extraer SOLO el token
+  const token = authorization.split(' ')[1]
+
+  try {
+    /** @type {import('types').Session} */ // @ts-ignore
+    const payload = jwt.verify(token, JWT_SECRET)
+
+    req.session = {
+      userId: payload.userId,
+      role: payload.role,
+    }
+
+    return next()
+  } catch (err) {
+    req.session = null
+    return next()
+  }
 }
 
 /**

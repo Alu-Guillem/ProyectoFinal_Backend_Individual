@@ -12,12 +12,24 @@
 import { DB_URI } from '#c'
 import mongoose from 'mongoose'
 
+import bookingSchema from '#modules/bookings/bookings.schema.js'
+
 /**
  * URI de conexión a MongoDB Atlas
  * @constant {string}
  * @private
  */
 const URI = DB_URI
+
+
+/**
+ * Registro de funciones que aplican validaciones de esquemas a las colecciones de la base de datos.
+ * Cada elemento debe ser una función que ejecuta la validación o modificación de un esquema en MongoDB.
+ *
+ * @constant {Array<Function>}
+ * @private
+ */
+const schemaRegistry = [bookingSchema]
 
 /**
  * Establece la conexión con la base de datos MongoDB
@@ -39,4 +51,9 @@ export const connectDB = () =>
   mongoose
     .connect(URI)
     .then(() => console.log('Conectado a MongoDB'))
+    /**
+     * Aplica todas las funciones de validación de esquemas registradas en schemaRegistry.
+     * Esto asegura que las colecciones tengan las validaciones actualizadas tras la conexión.
+     */
+    .then(() => schemaRegistry.forEach(schema => schema()))
     .catch(err => console.error('Error MongoDB', err))

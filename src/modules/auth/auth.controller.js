@@ -84,7 +84,7 @@ export async function register(req, res) {
       { expiresIn: '15d' },
     )
 
-    res.status(200).send({ token: accesToken })
+    res.status(200).json({ token: accesToken })
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'El correo electrónico ya está registrado' })
@@ -140,7 +140,7 @@ export async function login(req, res) {
       expiresIn: '15d',
     })
 
-    res.status(200).send({ token: accesToken })
+    res.status(200).json({ token: accesToken })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })

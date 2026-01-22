@@ -10,8 +10,6 @@ import {
   isValidEmployeeRole,
 } from '#libs/validation/index.js'
 
-import bcrypt from 'bcrypt'
-
 /**
  * Esquema de Usuario (UserSchema) para MongoDB utilizando Mongoose.
  * Este esquema representa un usuario genérico con campos comunes.
@@ -22,6 +20,7 @@ import bcrypt from 'bcrypt'
  * @property {string} name - El nombre del usuario. Es obligatorio.
  * @property {string} lastName - El apellido del usuario. Es obligatorio.
  * @property {string} password - La contraseña del usuario. Es obligatoria, no sera mostrada con un /GET.
+ * @property {string} [photo] - La URL de la foto del cliente. Es opcional.
  */
 export const UserSchema = new Schema(
   {
@@ -47,6 +46,9 @@ export const UserSchema = new Schema(
       type: String,
       required: true,
       select: false,
+    },
+    photo: {
+      type: String,
     },
   },
   {
@@ -85,7 +87,7 @@ const EmployeeSchema = new Schema(
  * @property {Date} birth_date - La fecha de nacimiento del cliente. Es obligatoria.
  * @property {string} gender - El género del cliente. Es obligatorio.
  * @property {string} [city] - La ciudad del cliente. Es opcional.
- * @property {string} [photo] - La URL de la foto del cliente. Es opcional.
+ * @property {string} [vip] - Estado vip del cliente
  */
 const CustomerSchema = new Schema(
   {
@@ -105,8 +107,8 @@ const CustomerSchema = new Schema(
     city: {
       type: String,
     },
-    photo: {
-      type: String,
+    vip: {
+      type: Boolean,
     },
   },
   {
@@ -174,8 +176,6 @@ export const validateEmployee = employeeData => {
  */
 export const UserUpdateSchema = {
   password: [minLength('contraseña', 8)],
-  firstName: [],
-  lastName: [],
   birthDate: [isValidDate('fecha de nacimiento')],
 }
 

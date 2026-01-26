@@ -54,3 +54,30 @@ export function formatDate(date) {
 
   return `${day}/${month}/${year}`
 }
+
+/**
+ * Calcula la edad a partir de una fecha de nacimiento
+ *
+ * @function getAge
+ * @param {Date} date - Fecha de nacimiento como objeto Date
+ * @returns {number|null} Edad calculada o null si el parámetro no es un objeto Date
+ *
+ * @example
+ * getAge(new Date(2000, 0, 1)) // 23 (si el año actual es 2023)
+ * getAge('invalid')            // null
+ */
+export function getAge(date) {
+  if (!(date instanceof Date)) return null
+
+  const now = new Date()
+
+  let year = now.getFullYear() - date.getFullYear()
+  const month = now.getMonth() - date.getMonth()
+  const day = now.getDate() - date.getDate()
+
+  if ((month == 0 && day < 0) || month < 0) {
+    year -= 1
+  }
+
+  return year
+}

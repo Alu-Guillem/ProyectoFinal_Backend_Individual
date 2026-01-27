@@ -46,7 +46,7 @@ export class ValidationError extends Error {
    * Mensaje de error estandarizado para la API.
    * @returns {string}
    */
-  get message() {
+  generateMessage() {
     let message = 'Se han detectado errores en los siguientes campos:'
     Object.values(this.errors).forEach(msg => {
       message += `\n- ${msg.join(', ')}`
@@ -60,7 +60,7 @@ export class ValidationError extends Error {
    */
   toJSON() {
     return {
-      message: this.message,
+      message: this.generateMessage(),
     }
   }
 }

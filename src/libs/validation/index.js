@@ -4,6 +4,11 @@
  * Esta librería proporciona un conjunto de validadores comunes y una función
  * para validar objetos completos contra un schema de validación.
  *
+ * Estandarización de errores:
+ * Todos los errores de validación lanzados por esta librería (ValidationError)
+ * devuelven un objeto con la forma `{ message: mensajeDeError }` al serializarse con toJSON.
+ * Se recomienda que todos los errores de la API sigan este formato para mantener consistencia.
+ *
  * @example
  * // Definir un schema de validación
  * import { isRequired, isValidEmail, maxLength, validateSchema } from '@/libs/validation'
@@ -26,11 +31,37 @@
 export class ValidationError extends Error {
   /**
    * @param {Object<string, string[]>} errors - Errores por campo
+   * @description
+   * Crea un error de validación que, al serializarse con toJSON(), devuelve un objeto con la forma:
+   * `{ message: 'Se han detectado errores en los siguientes campos: ...' }`
+   * Esto permite estandarizar la respuesta de errores en la API.
    */
   constructor(errors) {
     super('Validación fallida')
     this.name = 'ValidationError'
     this.errors = errors
+  }
+
+  /**
+   * Mensaje de error estandarizado para la API.
+   * @returns {string}
+   */
+  generateMessage() {
+    let message = 'Se han detectado errores en los siguientes campos:'
+    Object.values(this.errors).forEach(msg => {
+      message += `\n- ${msg.join(', ')}`
+    })
+    return message
+  }
+
+  /**
+   * Serializa el error en el formato estándar de la API: { message: string }
+   * @returns {{ message: string }}
+   */
+  toJSON() {
+    return {
+      message: this.generateMessage(),
+    }
   }
 }
 

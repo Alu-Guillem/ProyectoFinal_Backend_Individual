@@ -1,4 +1,4 @@
-import { Room } from './rooms.model';
+import { Room } from './rooms.model.js';
 
 // GET /habitaciones
 export const getRoom = async (req, res) => {
@@ -20,3 +20,10 @@ export const createRoom = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+
+
+
+export const getCheck = (req, res) => {
+  res.json({ ok: true, message: 'Rooms endpoint works' })
+}

@@ -1,12 +1,12 @@
 import { Router } from 'express'
 import { 
     getRoom,
-    createRoom
-} from './rooms.controller'
+    createRoom,
+    getCheck
+} from './rooms.controller.js'
 const router = Router()
 
-router.get('/', getRoom)
+router.get('/', getCheck)   
 router.post('/', createRoom);
-
 
 export default router

@@ -2,7 +2,7 @@ import { parseDate } from '#commons/index.js'
 import { Booking, validateBooking, validateBookingUpdate } from './bookings.model.js'
 import { Room } from '#modules/rooms/rooms.model.js'
 import { isAvailable } from './utils/index.js'
-import { isValidObjectId } from 'mongoose'
+import { isValidObjectId, Types } from 'mongoose'
 
 /**
  * Obtiene todas las reservas según el rol del usuario
@@ -74,6 +74,7 @@ export async function createNewBooking(req, res) {
   try {
     const { userId, role } = req.session
     const bookingData = req.body
+    console.log(bookingData)
 
     if (!bookingData) {
       return res.status(400).json({ message: 'Datos de la reserva no proporcionados' })
@@ -128,7 +129,7 @@ export async function createNewBooking(req, res) {
 
     // Verificar disponibilidad
     // Se obtienen todas las reservas de la habitación para comprobar conflicto
-    const existingBookings = await Booking.find({ roomId: validatedBooking.roomId })
+    const existingBookings = await Booking.find({ roomId: validatedBooking.roomId }).lean()
 
     // Objeto temporal con fechas parseadas para la verificación
     const tempBookingToCheck = { ...validatedBooking, startDate, endDate }
@@ -141,8 +142,15 @@ export async function createNewBooking(req, res) {
 
     // Cálculos de precios
     const totalNights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-    const pricePerNight = room.pricePerNight * (1 - room.offer / 100)
-    const totalPrice = totalNights * pricePerNight
+    const pricePerNight = parseFloat((room.pricePerNight * (1 - room.offer / 100)).toFixed(2))
+    const totalPrice = parseFloat((totalNights * pricePerNight).toFixed(2))
+    const userObjectId = new Types.ObjectId(validatedBooking.userId)
+    const roomObjectId = new Types.ObjectId(validatedBooking.roomId)
+
+    const discount =
+      validatedBooking.discount && (role === 'employee' || role === 'admin')
+        ? validatedBooking.discount
+        : room.offer
 
     // Creación de la reserva
     const newBooking = new Booking({
@@ -153,14 +161,16 @@ export async function createNewBooking(req, res) {
       totalNights,
       pricePerNight,
       totalPrice,
-      discount: room.offer,
+      discount,
+      userId: userObjectId,
+      roomId: roomObjectId,
     })
 
     const savedBooking = await newBooking.save()
 
     res.status(201).json(savedBooking)
   } catch (error) {
-    console.error(error)
+    console.error(error.errInfo.details || error)
     res.status(500).json({ message: 'Error del servidor' })
   }
 }
@@ -248,7 +258,7 @@ export async function updateBooking(req, res) {
       return res.status(400).json(err)
     }
 
-    const { startDate, endDate, occupants } = validatedData
+    const { startDate, endDate, occupants, discount } = validatedData
 
     if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
 
@@ -268,8 +278,16 @@ export async function updateBooking(req, res) {
       return res.status(400).json({ message: 'Datos de la reserva no proporcionados' })
     }
 
-    const room = await Room.findById(booking.roomId)
+    const room = await Room.findById(booking.roomId).lean()
     if (!room) return res.status(404).json({ message: 'Habitación no encontrada' })
+
+    if (discount !== undefined && (role === 'employee' || role === 'admin')) {
+      booking.discount = discount
+      booking.pricePerNight = parseFloat(
+        (room.pricePerNight * (1 - booking.discount / 100)).toFixed(2),
+      )
+      booking.totalPrice = parseFloat((booking.totalNights * booking.pricePerNight).toFixed(2))
+    }
 
     // Validar ocupantes
     if (occupants !== undefined) {
@@ -325,7 +343,7 @@ export async function updateBooking(req, res) {
       const otherBookings = await Booking.find({
         roomId: booking.roomId,
         _id: { $ne: booking._id },
-      })
+      }).lean()
 
       if (!isAvailable(otherBookings, { startDate: newStart, endDate: newEnd })) {
         return res
@@ -338,7 +356,7 @@ export async function updateBooking(req, res) {
 
       const totalNights = Math.ceil((newEnd.getTime() - newStart.getTime()) / ONE_DAY)
       booking.totalNights = totalNights
-      booking.totalPrice = totalNights * booking.pricePerNight
+      booking.totalPrice = parseFloat((totalNights * booking.pricePerNight).toFixed(2))
     }
 
     await booking.save()

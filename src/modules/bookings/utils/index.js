@@ -9,8 +9,8 @@
 /**
  * Rango de fechas para verificación de disponibilidad
  * @typedef {Object} DateRange
- * @property {Date|string} startDate - Fecha de inicio
- * @property {Date|string} endDate - Fecha de fin
+ * @property {Date|string|number} startDate - Fecha de inicio
+ * @property {Date|string|number} endDate - Fecha de fin
  * @property {'active'|'canceled'} [status] - Estado de la reserva (opcional)
  */
 
@@ -42,10 +42,16 @@
  * ) // false - no hay solapamiento
  */
 export const hasOverlap = (booking, newBooking) => {
-  const newStart = new Date(newBooking.startDate)
-  const newEnd = new Date(newBooking.endDate)
-  const bookingStart = new Date(booking.startDate)
-  const bookingEnd = new Date(booking.endDate)
+  // Normalizar fechas a medianoche UTC para evitar problemas con cambios horarios
+  const normalizeDate = (date) => {
+    const d = new Date(date)
+    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+  }
+
+  const newStart = normalizeDate(newBooking.startDate)
+  const newEnd = normalizeDate(newBooking.endDate)
+  const bookingStart = normalizeDate(booking.startDate)
+  const bookingEnd = normalizeDate(booking.endDate)
 
   return bookingStart < newEnd && bookingEnd > newStart
 }

@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  hotel-api:
+    build: .
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./src:/app/src
+    command: ['node', 'index.js']
+    env_file:
+      - .env

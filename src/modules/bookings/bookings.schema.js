@@ -20,8 +20,8 @@ const BookingCollectionSchema = {
     $jsonSchema: {
       bsonType: 'object',
       required: [
-        'userID',
-        'roomID',
+        'userId',
+        'roomId',
         'startDate',
         'endDate',
         'occupants',
@@ -31,11 +31,11 @@ const BookingCollectionSchema = {
         'status',
       ],
       properties: {
-        userID: {
+        userId: {
           bsonType: 'objectId',
           description: 'El ID del usuario que realiza la reserva',
         },
-        roomID: {
+        roomId: {
           bsonType: 'objectId',
           description: 'El ID de la habitación reservada',
         },
@@ -57,14 +57,12 @@ const BookingCollectionSchema = {
           minimum: 1,
         },
         pricePerNight: {
-          bsonType: 'double',
+          bsonType: ['double', 'int'],
           description: 'Precio por noche (con descuento aplicado)',
-          minimum: 1,
         },
         totalPrice: {
-          bsonType: 'double',
+          bsonType: ['double', 'int'],
           description: 'Precio total pagado de la estancia',
-          minimum: 1,
         },
         discount: {
           bsonType: 'int',

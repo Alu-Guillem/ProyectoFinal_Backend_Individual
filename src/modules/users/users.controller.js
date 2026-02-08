@@ -308,3 +308,49 @@ export async function updateUser(req, res) {
     res.status(500).json({ message: 'Error del servidor' })
   }
 }
+
+export async function getMe(req, res) {
+  try {
+    const { userId } = req.session
+
+    if (!isValidObjectId(userId)) return res.status(400).json({ message: 'ID de usuario inválido' })
+
+    const filter = { _id: userId }
+
+    const user = await User.findOne(filter)
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' })
+
+    res.status(200).json(user)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+export async function getAllEmployees(req, res) {
+  try {
+    const employees = await User.find({ role: { $in: ['admin', 'employee'] } })
+
+    if (employees.length === 0)
+      return res.status(404).json({ message: 'No se encontraron empleados' })
+
+    res.status(200).json(employees)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+export async function getAllCustomers(req, res) {
+  try {
+    const customers = await User.find({ role: 'customer' })
+
+    if (customers.length === 0)
+      return res.status(404).json({ message: 'No se encontraron clientes' })
+
+    res.status(200).json(customers)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}

@@ -175,6 +175,8 @@ export const validateEmployee = employeeData => {
  * @type {import('types').ValidationSchema}
  */
 export const UserUpdateSchema = {
+  firstName: [],
+  lastName: [],
   password: [minLength('contraseña', 8)],
   birthDate: [isValidDate('fecha de nacimiento')],
 }

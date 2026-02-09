@@ -426,6 +426,29 @@ export async function cancelBooking(req, res) {
     booking.status = 'canceled'
     await booking.save()
 
+    try {
+      const [customer, room] = await Promise.all([
+        User.findById(booking.userId).lean(),
+        Room.findById(booking.roomId).lean(),
+      ])
+
+      if (customer?.email) {
+        const customerName = `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
+        const refundAmount = booking.isPaid
+          ? `${Number(booking.totalPrice).toFixed(2)} EUR`
+          : '0.00 EUR'
+
+        await sendEmail(customer.email, 'Reserva cancelada', 'booking-cancel-alert', {
+          name: customerName || customer.email,
+          bookingId: booking._id.toString(),
+          roomName: room?.name ?? 'Habitacion asignada',
+          refundAmount,
+        })
+      }
+    } catch (mailError) {
+      console.error('Error al enviar correo de cancelacion:', mailError)
+    }
+
     res.status(200).json({ message: 'Reserva cancelada correctamente' })
   } catch (error) {
     console.error(error)

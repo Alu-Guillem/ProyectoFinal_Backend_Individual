@@ -18,6 +18,7 @@ import {
   deleteBooking,
   cancelBooking,
   extendBooking,
+  payBooking,
 } from '#modules/bookings/bookings.controller.js'
 import { validateBooking } from './bookings.model.js'
 
@@ -87,6 +88,14 @@ router.put('/:id/cancel', cancelBooking)
  * @body {string} endDate - Nueva fecha de fin
  */
 router.put('/:id/extend', extendBooking)
+
+/**
+ * @route PUT /api/bookings/:id/pay
+ * @description Marca una reserva como pagada
+ * @access Admin/Employee: cualquiera | Customer: solo propias
+ * @param {string} id - ID de la reserva
+ */
+router.put('/:id/pay', payBooking)
 
 /**
  * @route DELETE /api/bookings/:id

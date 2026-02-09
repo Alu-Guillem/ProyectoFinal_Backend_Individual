@@ -43,7 +43,7 @@
  */
 export const hasOverlap = (booking, newBooking) => {
   // Normalizar fechas a medianoche UTC para evitar problemas con cambios horarios
-  const normalizeDate = (date) => {
+  const normalizeDate = date => {
     const d = new Date(date)
     return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
   }

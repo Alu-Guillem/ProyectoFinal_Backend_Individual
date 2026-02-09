@@ -1,8 +1,10 @@
-import { parseDate } from '#commons/index.js'
+import { formatDate, parseDate } from '#commons/index.js'
 import { Booking, validateBooking, validateBookingUpdate } from './bookings.model.js'
 import { Room } from '#modules/rooms/rooms.model.js'
 import { isAvailable } from './utils/index.js'
 import { isValidObjectId, Types } from 'mongoose'
+import { User } from '#modules/users/users.model.js'
+import { sendEmail } from '#libs/mailing/index.js'
 
 /**
  * Obtiene todas las reservas según el rol del usuario
@@ -74,7 +76,6 @@ export async function createNewBooking(req, res) {
   try {
     const { userId, role } = req.session
     const bookingData = req.body
-    console.log(bookingData)
 
     if (!bookingData) {
       return res.status(400).json({ message: 'Datos de la reserva no proporcionados' })
@@ -140,17 +141,16 @@ export async function createNewBooking(req, res) {
         .json({ message: 'La habitación no está disponible en las fechas seleccionadas' })
     }
 
+    const discount =
+      validatedBooking.discount !== undefined && (role === 'employee' || role === 'admin')
+        ? validatedBooking.discount
+        : room.offer
     // Cálculos de precios
     const totalNights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-    const pricePerNight = parseFloat((room.pricePerNight * (1 - room.offer / 100)).toFixed(2))
+    const pricePerNight = parseFloat((room.pricePerNight * (1 - discount / 100)).toFixed(2))
     const totalPrice = parseFloat((totalNights * pricePerNight).toFixed(2))
     const userObjectId = new Types.ObjectId(validatedBooking.userId)
     const roomObjectId = new Types.ObjectId(validatedBooking.roomId)
-
-    const discount =
-      validatedBooking.discount && (role === 'employee' || role === 'admin')
-        ? validatedBooking.discount
-        : room.offer
 
     // Creación de la reserva
     const newBooking = new Booking({
@@ -162,15 +162,35 @@ export async function createNewBooking(req, res) {
       pricePerNight,
       totalPrice,
       discount,
+      isPaid: false,
+      checkInNotified: false,
+      checkOutNotified: false,
       userId: userObjectId,
       roomId: roomObjectId,
     })
 
     const savedBooking = await newBooking.save()
 
+    try {
+      const customer = await User.findById(validatedBooking.userId).lean()
+      if (customer?.email) {
+        const customerName = `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
+        await sendEmail(customer.email, 'Reserva creada', 'new-booking', {
+          name: customerName || customer.email,
+          bookingId: savedBooking._id.toString(),
+          roomName: room?.name ?? 'Habitacion asignada',
+          checkIn: formatDate(startDate) ?? '',
+          checkOut: formatDate(endDate) ?? '',
+          totalPrice: `${totalPrice.toFixed(2)} EUR`,
+        })
+      }
+    } catch (mailError) {
+      console.error('Error al enviar correo de reserva:', mailError)
+    }
+
     res.status(201).json(savedBooking)
   } catch (error) {
-    console.error(error.errInfo.details || error)
+    console.dir(error.errInfo.details || error, { depth: null })
     res.status(500).json({ message: 'Error del servidor' })
   }
 }
@@ -414,6 +434,71 @@ export async function cancelBooking(req, res) {
 }
 
 /**
+ * Marca una reserva como pagada
+ *
+ * @async
+ * @function payBooking
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Admin/employee pueden pagar cualquier reserva.
+ * Customers solo pueden pagar sus propias reservas.
+ * Si ya estaba pagada, se informa al usuario.
+ *
+ * @routeParam {string} id - ID de la reserva a pagar
+ *
+ * @response 200 - Reserva pagada o ya pagada
+ * @response 400 - ID inválido
+ * @response 404 - Reserva no encontrada
+ * @response 500 - Error del servidor
+ */
+export async function payBooking(req, res) {
+  try {
+    const { role, userId } = req.session
+    const { id } = req.params
+
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
+
+    const filter = { _id: id }
+    if (role === 'customer') {
+      filter.userId = userId
+    }
+
+    const booking = await Booking.findOne(filter)
+    if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
+
+    if (booking.isPaid) {
+      return res.status(409).json({ message: 'Ya has pagado esta reserva' })
+    }
+
+    booking.isPaid = true
+    await booking.save()
+
+    try {
+      const customer = await User.findById(booking.userId).lean()
+      if (customer?.email) {
+        const customerName = `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
+        await sendEmail(customer.email, 'Pago registrado', 'payment-success', {
+          name: customerName || customer.email,
+          bookingId: booking._id.toString(),
+          amount: `${Number(booking.totalPrice).toFixed(2)} EUR`,
+          paymentMethod: 'Pago simulado',
+          date: formatDate(new Date()) ?? '',
+        })
+      }
+    } catch (mailError) {
+      console.error('Error al enviar correo de pago:', mailError)
+    }
+
+    return res.status(200).json(booking)
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+/**
  * Extiende la fecha de fin de una reserva
  *
  * @async
@@ -532,6 +617,10 @@ export async function deleteBooking(req, res) {
 
     if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
 
+    if (role !== 'admin') {
+      return res.status(403).json({ message: 'No tienes permisos para eliminar reservas' })
+    }
+
     const filter = { _id: id }
     if (role === 'customer') {
       filter.userId = userId
@@ -539,6 +628,10 @@ export async function deleteBooking(req, res) {
 
     const booking = await Booking.findOne(filter)
     if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
+
+    if (booking.status !== 'canceled') {
+      return res.status(400).json({ message: 'Solo se pueden eliminar reservas canceladas' })
+    }
 
     await Booking.deleteOne({ _id: id })
 

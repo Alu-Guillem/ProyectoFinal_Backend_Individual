@@ -13,4 +13,7 @@ export interface Booking {
   discount?: number
   totalNights: number
   status: 'canceled' | 'active'
+  isPaid?: boolean
+  checkInNotified?: boolean
+  checkOutNotified?: boolean
 }

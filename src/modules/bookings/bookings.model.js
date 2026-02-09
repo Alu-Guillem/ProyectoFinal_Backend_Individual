@@ -17,6 +17,7 @@ import {
   validateSchema,
   isValidDate,
   isBetween,
+  isGreaterThan,
 } from '#libs/validation/index.js'
 import { formatDate } from '#commons/index.js'
 
@@ -35,6 +36,9 @@ import { formatDate } from '#commons/index.js'
  * @property {Number} discount - Porcentaje de descuento aplicado
  * @property {Number} totalNights - Número total de noches
  * @property {'active'|'canceled'} status - Estado de la reserva
+ * @property {boolean} isPaid - Indica si la reserva ya fue pagada
+ * @property {boolean} checkInNotified - Recordatorio de check-in enviado
+ * @property {boolean} checkOutNotified - Recordatorio de check-out enviado
  *
  * @type {Schema<import('types').Booking>}
  */
@@ -87,6 +91,18 @@ export const BookingDatabaseSchema = new Schema(
       enum: ['canceled', 'active'],
       default: 'active',
     },
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    checkInNotified: {
+      type: Boolean,
+      default: false,
+    },
+    checkOutNotified: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     toJSON: {
@@ -113,7 +129,12 @@ export const BookingInputSchema = {
   roomId: [isRequired('id de habitación')],
   startDate: [isRequired('fecha de inicio'), isValidDate('fecha de inicio')],
   endDate: [isRequired('fecha de fin'), isValidDate('fecha de fin')],
-  occupants: [isRequired('ocupantes'), isInteger('ocupantes'), isPositiveNumber('ocupantes')],
+  occupants: [
+    isRequired('ocupantes'),
+    isInteger('ocupantes'),
+    isPositiveNumber('ocupantes'),
+    isGreaterThan('ocupantes', 0),
+  ],
   discount: [isPositiveNumber('descuento'), isBetween('descuento', 0, 100)],
 }
 
@@ -133,7 +154,7 @@ export const validateBooking = bookingData => {
 export const BookingUpdateSchema = {
   startDate: [isValidDate('fecha de inicio')],
   endDate: [isValidDate('fecha de fin')],
-  occupants: [isInteger('ocupantes'), isPositiveNumber('ocupantes')],
+  occupants: [isInteger('ocupantes'), isPositiveNumber('ocupantes'), isGreaterThan('ocupantes', 0)],
   discount: [isPositiveNumber('descuento'), isBetween('descuento', 0, 100)],
 }
 

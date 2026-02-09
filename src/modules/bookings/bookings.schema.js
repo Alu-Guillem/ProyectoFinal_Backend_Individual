@@ -79,6 +79,18 @@ const BookingCollectionSchema = {
           enum: ['active', 'canceled'],
           description: 'Estado de la reserva',
         },
+        isPaid: {
+          bsonType: 'bool',
+          description: 'Indica si la reserva ya fue pagada',
+        },
+        checkInNotified: {
+          bsonType: 'bool',
+          description: 'Indica si se envio el recordatorio de check-in',
+        },
+        checkOutNotified: {
+          bsonType: 'bool',
+          description: 'Indica si se envio el recordatorio de check-out',
+        },
       },
     },
   },

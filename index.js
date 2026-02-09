@@ -22,6 +22,7 @@ import morgan from 'morgan'
 import { HOSTNAME, PORT } from '#c'
 import { connectDB } from '#libs/database/index.js'
 import { connectEmail } from '#libs/mailing/index.js'
+import { startBookingReminders } from '#modules/bookings/booking-reminders.js'
 
 /**
  * Instancia principal de la aplicación Express
@@ -38,6 +39,9 @@ connectDB()
 
 /** Inicializa el servicio de correo y carga plantillas */
 connectEmail()
+
+/** Programa recordatorios 24 horas antes de check-in y check-out */
+startBookingReminders()
 
 // ─────────────────────────────────────────────────────────────
 // Middlewares

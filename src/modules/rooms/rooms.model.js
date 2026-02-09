@@ -32,6 +32,9 @@ export const RoomSchema = new Schema({
 }
 )
 
+//Comprueba que no exista habitaciones con el mismo nombre y tipo repetidos
+RoomSchema.index({ nombre: 1, tipo: 1 }, { unique: true })
+
 export const Room = model('Room', RoomSchema)
 
 

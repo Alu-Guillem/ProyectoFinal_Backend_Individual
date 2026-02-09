@@ -7,7 +7,6 @@
  *
  * @requires mongoo
  * */
-import { minLength } from '#r/libs/validation/common-validations.js'
 import mongoose from 'mongoose'
 
 /**

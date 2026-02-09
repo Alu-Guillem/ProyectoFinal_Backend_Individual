@@ -97,7 +97,7 @@ export async function connectEmail() {
     console.error('Error al cargar las plantillas de correo:', err)
   }
 
-  // testTemplates('test@example.com')
+  //testTemplates('test@example.com')
 }
 
 /**
@@ -117,7 +117,7 @@ export async function connectEmail() {
  *
  * await sendEmail(
  *   'usuario@example.com',
- *   'Bienvenido a TryCatchers',
+ *   'Bienvenido a Pere Maria Hotel',
  *   'welcome',
  *   { name: 'Juan', email: 'juan@example.com' }
  * )
@@ -129,7 +129,7 @@ export async function sendEmail(to, subject, template, variables) {
 
   const html = await renderTemplate(template, variables)
   const mailOptions = {
-    from: `"TryCatchers" <${MAIL_USER}>`,
+    from: `"Pere Maria Hotel" <${MAIL_USER}>`,
     to,
     subject,
     text: 'Por favor, utiliza un cliente de correo que soporte HTML para ver este mensaje.',
@@ -188,7 +188,7 @@ async function renderTemplate(templateName, variables) {
  *
  * @example
  * const templates = listEmailTemplates()
- * console.log(templates) // ['welcome', 'password-recovery', 'booking-confirmation', ...]
+ * console.log(templates) // ['welcome', 'new-booking', 'payment-success', ...]
  */
 export function listEmailTemplates() {
   return [...emailTemplates]
@@ -222,9 +222,22 @@ export function hasEmailTemplate(name) {
  * testTemplates('admin@example.com')
  */
 export function testTemplates(to) {
+  const sampleData = {
+    name: 'Ana Perez',
+    bookingId: 'PM-2026-0001',
+    roomName: 'Suite Nebula',
+    checkIn: '15/02/2026',
+    checkOut: '18/02/2026',
+    totalPrice: '450.00 EUR',
+    amount: '450.00 EUR',
+    paymentMethod: 'Pago simulado',
+    date: '09/02/2026',
+    refundAmount: '0.00 EUR',
+  }
+
   emailTemplates.forEach(async template => {
     sendEmail(to, `Prueba de plantilla: ${template}`, template, {
-      name: 'Usuario de Prueba',
+      ...sampleData,
     })
       .then(() => console.log(`Correo de prueba enviado con la plantilla "${template}"`))
       .catch(err =>

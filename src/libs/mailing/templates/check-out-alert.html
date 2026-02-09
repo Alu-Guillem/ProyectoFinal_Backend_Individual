@@ -1,39 +1,141 @@
 <!doctype html>
 <html>
-
-<head>
+  <head>
     <meta charset="utf-8" />
-    <title>Recordatorio de Check-out</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recordatorio de check-out</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #222;
-        }
+      .preheader {
+        display: none;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        color: transparent;
+      }
 
+      @media (max-width: 600px) {
         .container {
-            max-width: 600px;
-            margin: 0 auto;
+          width: 100% !important;
         }
 
-        .box {
-            background: #fff5e6;
-            padding: 14px;
-            border-radius: 8px;
+        .pad {
+          padding: 20px !important;
         }
+      }
     </style>
-</head>
+  </head>
 
-<body>
-    <div class="container">
-        <h2>Recordatorio de Check-out</h2>
-        <div class="box">
-            <p><strong>Cliente:</strong> {{name}}</p>
-            <p><strong>Nº Reserva:</strong> {{bookingId}}</p>
-            <p><strong>Habitación:</strong> {{roomName}}</p>
-            <p><strong>Fecha de Check-out:</strong> {{checkOut}}</p>
-        </div>
-        <p>Gracias por tu estancia. Esperamos verte pronto.</p>
-    </div>
-</body>
-
+  <body style="margin: 0; padding: 0; background-color: #fff7ed">
+    <div class="preheader">Tu check-out es en 24 horas.</div>
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="background-color: #fff7ed"
+    >
+      <tr>
+        <td align="center" style="padding: 28px 12px">
+          <table
+            role="presentation"
+            class="container"
+            width="600"
+            cellspacing="0"
+            cellpadding="0"
+            style="
+              width: 100%;
+              max-width: 600px;
+              background-color: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              border: 1px solid #fde2cc;
+            "
+          >
+            <tr>
+              <td
+                style="
+                  padding: 18px 22px;
+                  background-color: #7c2d12;
+                  font-family: Arial, sans-serif;
+                  color: #ffffff;
+                "
+              >
+                <div style="font-size: 16px; letter-spacing: 0.6px">Pere Maria Hotel</div>
+                <div style="font-size: 20px; font-weight: bold; margin-top: 6px">
+                  Check-out en 24 horas
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="pad" style="padding: 22px; font-family: Arial, sans-serif; color: #1b1f2a">
+                <p style="margin: 0 0 12px; font-size: 14px; line-height: 1.6">
+                  Hola, {{name}}. Te recordamos tu salida programada.
+                </p>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  style="border: 1px solid #fde2cc; border-radius: 12px"
+                >
+                  <tr>
+                    <td
+                      style="
+                        width: 140px;
+                        background-color: #ea580c;
+                        color: #ffffff;
+                        padding: 16px;
+                        font-family: Arial, sans-serif;
+                      "
+                    >
+                      <div
+                        style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px"
+                      >
+                        Check-out
+                      </div>
+                      <div style="font-size: 18px; font-weight: bold; margin-top: 6px">
+                        {{checkOut}}
+                      </div>
+                    </td>
+                    <td style="padding: 16px; font-size: 14px; line-height: 1.6">
+                      <div><strong>No. Reserva:</strong> {{bookingId}}</div>
+                      <div><strong>Habitacion:</strong> {{roomName}}</div>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.6">
+                  Gracias por tu estancia. Esperamos verte pronto.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  padding: 14px 22px;
+                  background-color: #ffedd5;
+                  font-family: Arial, sans-serif;
+                  font-size: 12px;
+                  color: #6b7280;
+                "
+              >
+                <p style="margin: 0">
+                  Si necesitas ayuda con el check-out, respondemos a este correo.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p
+            style="
+              margin: 12px 0 0;
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              color: #9a6b3a;
+            "
+          >
+            © 2026 Pere Maria Hotel.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>

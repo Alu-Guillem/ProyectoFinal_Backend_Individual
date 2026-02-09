@@ -28,6 +28,6 @@ router.get('/:id', getOneUser)
 
 router.delete('/:id', deleteUser)
 
-router.patch('/:id', updateUser)
+router.put('/:id', updateUser)
 
 export default router

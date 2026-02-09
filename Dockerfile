@@ -6,7 +6,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY src ./src
 COPY index.js jsconfig.json ./
 
 EXPOSE 3000

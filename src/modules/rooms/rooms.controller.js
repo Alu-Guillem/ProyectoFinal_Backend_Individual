@@ -13,19 +13,21 @@ export const getRoom = async (req, res) => {
 // POST api/rooms
 export const createRoom = async (req, res) => {
   try {
-    const { nombre, tipo, numero, precio, ocupacion } = req.body
+    const { name, type, number, pricePerNight, occupancyLimit } = req.body
+
+    console.log('Datos recibidos:', req.body)
 
     if (
-      isNaN(numero) ||
-      isNaN(precio) ||
-      isNaN(ocupacion)
+      isNaN(number) ||
+      isNaN(pricePerNight) ||
+      isNaN(occupancyLimit)
     ) {
       return res.status(400).json({
-        error: 'numero, precio y ocupacion deben ser números'
+        error: 'numero, precio y la ocupacion deben ser números'
       })
     }
 
-    const existingRoom = await Room.findOne({ nombre, tipo })
+    const existingRoom = await Room.findOne({ name, type })
 
     if (existingRoom) {
       return res.status(409).json({
@@ -33,8 +35,8 @@ export const createRoom = async (req, res) => {
       })
     }
 
-    const room = await Room.create(req.body)
-
+    const room = new Room({ name, type, number, pricePerNight, occupancyLimit })
+    await room.save()
     res.status(201).json(room)
 
   } catch (error) {
@@ -47,22 +49,22 @@ export const createRoom = async (req, res) => {
 export const updateRoom = async (req, res) => {
   try {
     const { id } = req.params
-    const { nombre, tipo, numero, precio, ocupacion } = req.body
+    const { name, type, number, pricePerNight, occupancyLimit } = req.body
 
     if (
-      (numero !== undefined && isNaN(numero)) ||
-      (precio !== undefined && isNaN(precio)) ||
-      (ocupacion !== undefined && isNaN(ocupacion))
+      (number !== undefined && isNaN(number)) ||
+      (pricePerNight !== undefined && isNaN(pricePerNight)) ||
+      (occupancyLimit !== undefined && isNaN(occupancyLimit))
     ) {
       return res.status(400).json({
         error: 'numero, precio y ocupacion deben ser números'
       })
     }
 
-    if (nombre && tipo) {
+    if (name && type) {
       const existingRoom = await Room.findOne({
-        nombre,
-        tipo,
+        name,
+        type,
         _id: { $ne: id }
       })
 

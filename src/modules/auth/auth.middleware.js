@@ -21,7 +21,7 @@ export function sessionMiddleware(req, res, next) {
     }
 
     return next()
-  } catch (err) {
+  } catch {
     req.session = null
     return next()
   }

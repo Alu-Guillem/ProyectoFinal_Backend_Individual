@@ -1,8 +1,10 @@
-import { parseDate } from '#commons/index.js'
+import { formatDate, parseDate } from '#commons/index.js'
 import { Booking, validateBooking, validateBookingUpdate } from './bookings.model.js'
 import { Room } from '#modules/rooms/rooms.model.js'
 import { isAvailable } from './utils/index.js'
-import { isValidObjectId } from 'mongoose'
+import { isValidObjectId, Types } from 'mongoose'
+import { User } from '#modules/users/users.model.js'
+import { sendEmail } from '#libs/mailing/index.js'
 
 /**
  * Obtiene todas las reservas según el rol del usuario
@@ -128,7 +130,7 @@ export async function createNewBooking(req, res) {
 
     // Verificar disponibilidad
     // Se obtienen todas las reservas de la habitación para comprobar conflicto
-    const existingBookings = await Booking.find({ roomId: validatedBooking.roomId })
+    const existingBookings = await Booking.find({ roomId: validatedBooking.roomId }).lean()
 
     // Objeto temporal con fechas parseadas para la verificación
     const tempBookingToCheck = { ...validatedBooking, startDate, endDate }
@@ -139,10 +141,16 @@ export async function createNewBooking(req, res) {
         .json({ message: 'La habitación no está disponible en las fechas seleccionadas' })
     }
 
+    const discount =
+      validatedBooking.discount !== undefined && (role === 'employee' || role === 'admin')
+        ? validatedBooking.discount
+        : room.offer
     // Cálculos de precios
     const totalNights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-    const pricePerNight = room.pricePerNight * (1 - room.offer / 100)
-    const totalPrice = totalNights * pricePerNight
+    const pricePerNight = parseFloat((room.pricePerNight * (1 - discount / 100)).toFixed(2))
+    const totalPrice = parseFloat((totalNights * pricePerNight).toFixed(2))
+    const userObjectId = new Types.ObjectId(validatedBooking.userId)
+    const roomObjectId = new Types.ObjectId(validatedBooking.roomId)
 
     // Creación de la reserva
     const newBooking = new Booking({
@@ -153,14 +161,36 @@ export async function createNewBooking(req, res) {
       totalNights,
       pricePerNight,
       totalPrice,
-      discount: room.offer,
+      discount,
+      isPaid: false,
+      checkInNotified: false,
+      checkOutNotified: false,
+      userId: userObjectId,
+      roomId: roomObjectId,
     })
 
     const savedBooking = await newBooking.save()
 
+    try {
+      const customer = await User.findById(validatedBooking.userId).lean()
+      if (customer?.email) {
+        const customerName = `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
+        await sendEmail(customer.email, 'Reserva creada', 'new-booking', {
+          name: customerName || customer.email,
+          bookingId: savedBooking._id.toString(),
+          roomName: room?.name ?? 'Habitacion asignada',
+          checkIn: formatDate(startDate) ?? '',
+          checkOut: formatDate(endDate) ?? '',
+          totalPrice: `${totalPrice.toFixed(2)} EUR`,
+        })
+      }
+    } catch (mailError) {
+      console.error('Error al enviar correo de reserva:', mailError)
+    }
+
     res.status(201).json(savedBooking)
   } catch (error) {
-    console.error(error)
+    console.dir(error.errInfo.details || error, { depth: null })
     res.status(500).json({ message: 'Error del servidor' })
   }
 }
@@ -248,7 +278,7 @@ export async function updateBooking(req, res) {
       return res.status(400).json(err)
     }
 
-    const { startDate, endDate, occupants } = validatedData
+    const { startDate, endDate, occupants, discount } = validatedData
 
     if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
 
@@ -268,8 +298,16 @@ export async function updateBooking(req, res) {
       return res.status(400).json({ message: 'Datos de la reserva no proporcionados' })
     }
 
-    const room = await Room.findById(booking.roomId)
+    const room = await Room.findById(booking.roomId).lean()
     if (!room) return res.status(404).json({ message: 'Habitación no encontrada' })
+
+    if (discount !== undefined && (role === 'employee' || role === 'admin')) {
+      booking.discount = discount
+      booking.pricePerNight = parseFloat(
+        (room.pricePerNight * (1 - booking.discount / 100)).toFixed(2),
+      )
+      booking.totalPrice = parseFloat((booking.totalNights * booking.pricePerNight).toFixed(2))
+    }
 
     // Validar ocupantes
     if (occupants !== undefined) {
@@ -325,7 +363,7 @@ export async function updateBooking(req, res) {
       const otherBookings = await Booking.find({
         roomId: booking.roomId,
         _id: { $ne: booking._id },
-      })
+      }).lean()
 
       if (!isAvailable(otherBookings, { startDate: newStart, endDate: newEnd })) {
         return res
@@ -338,7 +376,7 @@ export async function updateBooking(req, res) {
 
       const totalNights = Math.ceil((newEnd.getTime() - newStart.getTime()) / ONE_DAY)
       booking.totalNights = totalNights
-      booking.totalPrice = totalNights * booking.pricePerNight
+      booking.totalPrice = parseFloat((totalNights * booking.pricePerNight).toFixed(2))
     }
 
     await booking.save()
@@ -388,10 +426,98 @@ export async function cancelBooking(req, res) {
     booking.status = 'canceled'
     await booking.save()
 
+    try {
+      const [customer, room] = await Promise.all([
+        User.findById(booking.userId).lean(),
+        Room.findById(booking.roomId).lean(),
+      ])
+
+      if (customer?.email) {
+        const customerName = `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
+        const refundAmount = booking.isPaid
+          ? `${Number(booking.totalPrice).toFixed(2)} EUR`
+          : '0.00 EUR'
+
+        await sendEmail(customer.email, 'Reserva cancelada', 'booking-cancel-alert', {
+          name: customerName || customer.email,
+          bookingId: booking._id.toString(),
+          roomName: room?.name ?? 'Habitacion asignada',
+          refundAmount,
+        })
+      }
+    } catch (mailError) {
+      console.error('Error al enviar correo de cancelacion:', mailError)
+    }
+
     res.status(200).json({ message: 'Reserva cancelada correctamente' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+/**
+ * Marca una reserva como pagada
+ *
+ * @async
+ * @function payBooking
+ * @param {import('types').AuthenticatedRequest} req - Request con sesión autenticada
+ * @param {import('express').Response} res - Response de Express
+ *
+ * @description
+ * Admin/employee pueden pagar cualquier reserva.
+ * Customers solo pueden pagar sus propias reservas.
+ * Si ya estaba pagada, se informa al usuario.
+ *
+ * @routeParam {string} id - ID de la reserva a pagar
+ *
+ * @response 200 - Reserva pagada o ya pagada
+ * @response 400 - ID inválido
+ * @response 404 - Reserva no encontrada
+ * @response 500 - Error del servidor
+ */
+export async function payBooking(req, res) {
+  try {
+    const { role, userId } = req.session
+    const { id } = req.params
+
+    if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
+
+    const filter = { _id: id }
+    if (role === 'customer') {
+      filter.userId = userId
+    }
+
+    const booking = await Booking.findOne(filter)
+    if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
+
+    if (booking.isPaid) {
+      return res.status(409).json({ message: 'Ya has pagado esta reserva' })
+    }
+
+    booking.isPaid = true
+    await booking.save()
+
+    try {
+      const customer = await User.findById(booking.userId).lean()
+      if (customer?.email) {
+        const customerName = `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
+        await sendEmail(customer.email, 'Pago registrado', 'payment-success', {
+          name: customerName || customer.email,
+          bookingId: booking._id.toString(),
+          amount: `${Number(booking.totalPrice).toFixed(2)} EUR`,
+          paymentMethod: 'Pago simulado',
+          date: formatDate(new Date()) ?? '',
+        })
+      }
+    } catch (mailError) {
+      console.error('Error al enviar correo de pago:', mailError)
+    }
+
+    return res.status(200).json(booking)
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ message: 'Error del servidor' })
   }
 }
 
@@ -514,6 +640,10 @@ export async function deleteBooking(req, res) {
 
     if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de reserva inválido' })
 
+    if (role !== 'admin') {
+      return res.status(403).json({ message: 'No tienes permisos para eliminar reservas' })
+    }
+
     const filter = { _id: id }
     if (role === 'customer') {
       filter.userId = userId
@@ -521,6 +651,10 @@ export async function deleteBooking(req, res) {
 
     const booking = await Booking.findOne(filter)
     if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
+
+    if (booking.status !== 'canceled') {
+      return res.status(400).json({ message: 'Solo se pueden eliminar reservas canceladas' })
+    }
 
     await Booking.deleteOne({ _id: id })
 

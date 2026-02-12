@@ -1,8 +1,9 @@
 import { JWT_SECRET } from '#r/constants.js'
-import { getAge, parseDate } from '../commons/index.js'
-import { Customer, User, validateCustomer } from '../users/users.model.js'
-import { hashPassword } from '../users/utils/index.js'
+import { getAge, parseDate } from '#commons/index.js'
+import { Customer, User, validateCustomer } from '#modules/users/users.model.js'
+import { hashPassword } from '#modules/users/utils/index.js'
 import { validateLogin } from './auth.model.js'
+import { sendEmail } from '#libs/mailing/index.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 
@@ -73,6 +74,18 @@ export async function register(req, res) {
     })
 
     const customerSaved = await newCustomer.save()
+
+    try {
+      if (customerSaved?.email) {
+        const customerName =
+          `${customerSaved.firstName ?? ''} ${customerSaved.lastName ?? ''}`.trim()
+        await sendEmail(customerSaved.email, 'Bienvenido a Pere Maria Hotel', 'welcome', {
+          name: customerName || customerSaved.email,
+        })
+      }
+    } catch (mailError) {
+      console.error('Error al enviar correo de bienvenida:', mailError)
+    }
 
     if (!customerSaved) {
       return res.status(400).json({ message: 'No se ha podido guardar el usuario' })

@@ -1,4 +1,4 @@
-import { getAge, parseDate } from '../commons/index.js'
+import { getAge, parseDate } from '#commons/index.js'
 import {
   Admin,
   Customer,
@@ -11,6 +11,7 @@ import {
 
 import { isValidObjectId } from 'mongoose'
 import { hashPassword } from './utils/index.js'
+import { sendEmail } from '#libs/mailing/index.js'
 
 export async function getUsers(req, res) {
   try {
@@ -54,7 +55,6 @@ export async function getUsers(req, res) {
  */
 export async function createEmployee(req, res) {
   try {
-    const { role, userId } = req.session
     const userData = req.body
 
     if (!userData) {
@@ -156,6 +156,17 @@ export async function createCustomer(req, res) {
     })
 
     const customerSaved = await newCustomer.save()
+    try {
+      if (customerSaved?.email) {
+        const customerName =
+          `${customerSaved.firstName ?? ''} ${customerSaved.lastName ?? ''}`.trim()
+        await sendEmail(customerSaved.email, 'Bienvenido a Pere Maria Hotel', 'welcome', {
+          name: customerName || customerSaved.email,
+        })
+      }
+    } catch (mailError) {
+      console.error('Error al enviar correo de bienvenida:', mailError)
+    }
     res.status(201).send(customerSaved)
   } catch (error) {
     if (error.code === 11000) {
@@ -270,7 +281,6 @@ export async function deleteUser(req, res) {
  */
 export async function updateUser(req, res) {
   try {
-    const { userId, role } = req.session
     const { id } = req.params
 
     if (!isValidObjectId(id)) return res.status(400).json({ message: 'ID de usuario inválido' })
@@ -282,7 +292,7 @@ export async function updateUser(req, res) {
       return res.status(400).json(err)
     }
 
-    const { password, firstName, lastName, birthDate } = validatedData
+    const { password, firstName, lastName, birthDate, vip } = validatedData
 
     const user = await User.findById(id)
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' })
@@ -301,8 +311,58 @@ export async function updateUser(req, res) {
 
       user.set('birthDate', parsedBirthDate)
     }
+
+    if (vip !== undefined && user.role === 'customer') {
+      user.set('vip', vip)
+    }
     const updatedUser = await user.save()
     res.status(200).json(updatedUser)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+export async function getMe(req, res) {
+  try {
+    const { userId } = req.session
+
+    if (!isValidObjectId(userId)) return res.status(400).json({ message: 'ID de usuario inválido' })
+
+    const filter = { _id: userId }
+
+    const user = await User.findOne(filter)
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' })
+
+    res.status(200).json(user)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+export async function getAllEmployees(req, res) {
+  try {
+    const employees = await User.find({ role: { $in: ['admin', 'employee'] } })
+
+    if (employees.length === 0)
+      return res.status(404).json({ message: 'No se encontraron empleados' })
+
+    res.status(200).json(employees)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error del servidor' })
+  }
+}
+
+export async function getAllCustomers(req, res) {
+  try {
+    const customers = await User.find({ role: 'customer' })
+
+    if (customers.length === 0)
+      return res.status(404).json({ message: 'No se encontraron clientes' })
+
+    res.status(200).json(customers)
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })

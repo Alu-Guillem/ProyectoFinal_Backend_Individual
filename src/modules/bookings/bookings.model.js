@@ -16,6 +16,8 @@ import {
   isInteger,
   validateSchema,
   isValidDate,
+  isBetween,
+  isGreaterThan,
 } from '#libs/validation/index.js'
 import { formatDate } from '#commons/index.js'
 
@@ -25,15 +27,18 @@ import { formatDate } from '#commons/index.js'
  * @typedef {Object} BookingSchema
  * @property {Types.ObjectId} userId - ID del usuario que realiza la reserva
  * @property {Types.ObjectId} roomId - ID de la habitación reservada
- * @property {Date} startDate - Fecha de inicio de la estancia
- * @property {Date} endDate - Fecha de fin de la estancia
- * @property {Date} bookingDate - Fecha en que se realizó la reserva
- * @property {number} occupants - Número de ocupantes
- * @property {number} pricePerNight - Precio por noche (con descuento aplicado)
- * @property {number} totalPrice - Precio total de la estancia
- * @property {number} discount - Porcentaje de descuento aplicado
- * @property {number} totalNights - Número total de noches
+ * @property  {Date | String} startDate - Fecha de inicio de la estancia
+ * @property  {Date | String} endDate - Fecha de fin de la estancia
+ * @property  {Date | String} bookingDate - Fecha en que se realizó la reserva
+ * @property {Number} occupants - Número de ocupantes
+ * @property {Number} pricePerNight - Precio por noche (con descuento aplicado)
+ * @property {Number} totalPrice - Precio total de la estancia
+ * @property {Number} discount - Porcentaje de descuento aplicado
+ * @property {Number} totalNights - Número total de noches
  * @property {'active'|'canceled'} status - Estado de la reserva
+ * @property {boolean} isPaid - Indica si la reserva ya fue pagada
+ * @property {boolean} checkInNotified - Recordatorio de check-in enviado
+ * @property {boolean} checkOutNotified - Recordatorio de check-out enviado
  *
  * @type {Schema<import('types').Booking>}
  */
@@ -42,10 +47,12 @@ export const BookingDatabaseSchema = new Schema(
     userId: {
       type: Types.ObjectId,
       required: true,
+      ref: 'users',
     },
     roomId: {
       type: Types.ObjectId,
       required: true,
+      ref: 'rooms',
     },
     startDate: {
       type: Date,
@@ -84,6 +91,18 @@ export const BookingDatabaseSchema = new Schema(
       enum: ['canceled', 'active'],
       default: 'active',
     },
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    checkInNotified: {
+      type: Boolean,
+      default: false,
+    },
+    checkOutNotified: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     toJSON: {
@@ -110,7 +129,13 @@ export const BookingInputSchema = {
   roomId: [isRequired('id de habitación')],
   startDate: [isRequired('fecha de inicio'), isValidDate('fecha de inicio')],
   endDate: [isRequired('fecha de fin'), isValidDate('fecha de fin')],
-  occupants: [isRequired('ocupantes'), isInteger('ocupantes'), isPositiveNumber('ocupantes')],
+  occupants: [
+    isRequired('ocupantes'),
+    isInteger('ocupantes'),
+    isPositiveNumber('ocupantes'),
+    isGreaterThan('ocupantes', 0),
+  ],
+  discount: [isPositiveNumber('descuento'), isBetween('descuento', 0, 100)],
 }
 
 /**
@@ -129,7 +154,8 @@ export const validateBooking = bookingData => {
 export const BookingUpdateSchema = {
   startDate: [isValidDate('fecha de inicio')],
   endDate: [isValidDate('fecha de fin')],
-  occupants: [isInteger('ocupantes'), isPositiveNumber('ocupantes')],
+  occupants: [isInteger('ocupantes'), isPositiveNumber('ocupantes'), isGreaterThan('ocupantes', 0)],
+  discount: [isPositiveNumber('descuento'), isBetween('descuento', 0, 100)],
 }
 
 /**

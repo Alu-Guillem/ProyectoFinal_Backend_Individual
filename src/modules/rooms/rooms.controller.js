@@ -10,17 +10,31 @@ export const getRoom = async (req, res) => {
   }
 };
 
+//GET api/rooms/:id
+
+export const getOneRoom = async (req, res) => {
+  try{
+    const room = await Room.findById(req.params.id)
+    res.json(room)
+  }catch(error){ res.status(500).json({ error: 'Error al obtener la habitacion'}) }
+
+};
+
+
+
+
 // POST api/rooms
 export const createRoom = async (req, res) => {
   try {
-    const { name, type, number, pricePerNight, occupancyLimit } = req.body
+    const { name, type, number, pricePerNight, occupancyLimit, description, offer } = req.body
 
     console.log('Datos recibidos:', req.body)
 
     if (
       isNaN(number) ||
       isNaN(pricePerNight) ||
-      isNaN(occupancyLimit)
+      isNaN(occupancyLimit) ||
+      isNaN(offer)
     ) {
       return res.status(400).json({
         error: 'numero, precio y la ocupacion deben ser números'
@@ -35,7 +49,7 @@ export const createRoom = async (req, res) => {
       })
     }
 
-    const room = new Room({ name, type, number, pricePerNight, occupancyLimit })
+    const room = new Room({ name, type, number, pricePerNight, occupancyLimit, description, offer })
     await room.save()
     res.status(201).json(room)
 
@@ -49,15 +63,16 @@ export const createRoom = async (req, res) => {
 export const updateRoom = async (req, res) => {
   try {
     const { id } = req.params
-    const { name, type, number, pricePerNight, occupancyLimit } = req.body
+    const { name, type, number, pricePerNight, occupancyLimit, description, offer } = req.body
 
     if (
       (number !== undefined && isNaN(number)) ||
       (pricePerNight !== undefined && isNaN(pricePerNight)) ||
-      (occupancyLimit !== undefined && isNaN(occupancyLimit))
+      (occupancyLimit !== undefined && isNaN(occupancyLimit)) ||
+      (offer !== undefined && isNaN(offer))
     ) {
       return res.status(400).json({
-        error: 'numero, precio y ocupacion deben ser números'
+        error: 'numero, precio, ocupacion y oferta deben ser números'
       })
     }
 

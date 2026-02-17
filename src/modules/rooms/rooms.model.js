@@ -25,6 +25,12 @@ export const RoomSchema = new Schema({
     type: Number,
     required: true,
   },
+  description: {
+    type: String
+  },
+  offer: {
+    type: Number
+  }
 },
 {
   timestamps: true,

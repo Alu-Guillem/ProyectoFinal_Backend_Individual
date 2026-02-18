@@ -292,7 +292,7 @@ export async function updateUser(req, res) {
       return res.status(400).json(err)
     }
 
-    const { password, firstName, lastName, birthDate } = validatedData
+    const { password, firstName, lastName, birthDate, vip } = validatedData
 
     const user = await User.findById(id)
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' })
@@ -310,6 +310,10 @@ export async function updateUser(req, res) {
       }
 
       user.set('birthDate', parsedBirthDate)
+    }
+
+    if (vip !== undefined && user.role === 'customer') {
+      user.set('vip', vip)
     }
     const updatedUser = await user.save()
     res.status(200).json(updatedUser)

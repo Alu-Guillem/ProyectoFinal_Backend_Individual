@@ -149,6 +149,8 @@ export const CustomerInputSchema = {
   birthDate: [isRequired('fecha de nacimiento del usuario'), isValidDate('fecha de nacimiento')],
   gender: [isRequired('genero del usuario')],
   dni: [isRequired('dni del usuario'), isValidDNI('dni')],
+  city: [],
+  vip: [],
 }
 
 /**
@@ -175,6 +177,7 @@ export const validateEmployee = employeeData => {
  * @type {import('types').ValidationSchema}
  */
 export const UserUpdateSchema = {
+  vip: [],
   firstName: [],
   lastName: [],
   password: [minLength('contraseña', 8)],

@@ -20,19 +20,8 @@ import {
   extendBooking,
   payBooking,
 } from '#modules/bookings/bookings.controller.js'
-import { validateBooking } from './bookings.model.js'
 
 const router = Router()
-
-router.get('/fail-request', (req, res) => {
-  try {
-    validateBooking({})
-    res.status(200).json({ message: 'Validación exitosa' })
-  } catch (err) {
-    console.log(JSON.stringify(err))
-    res.status(400).json(err)
-  }
-})
 
 /**
  * @route GET /api/bookings

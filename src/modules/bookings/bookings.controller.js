@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Controlador REST de reservas con validaciones de negocio.
+ */
+
 import { formatDate, parseDate } from '#commons/index.js'
 import { Booking, validateBooking, validateBookingUpdate } from './bookings.model.js'
 import { Room } from '#modules/rooms/rooms.model.js'
@@ -423,6 +427,10 @@ export async function cancelBooking(req, res) {
     const booking = await Booking.findOne(filter)
     if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
 
+    if (booking.status === 'canceled') {
+      return res.status(409).json({ message: 'La reserva ya esta cancelada' })
+    }
+
     booking.status = 'canceled'
     await booking.save()
 
@@ -569,6 +577,11 @@ export async function extendBooking(req, res) {
       return res.status(400).json({ message: 'No se puede extender una reserva cancelada' })
 
     const newEndDate = parseDate(endDate)
+    if (!newEndDate) {
+      return res
+        .status(400)
+        .json({ message: 'La fecha de fin debe tener el formato DD/MM/YYYY y ser válida' })
+    }
     const currentEndDate = new Date(booking.endDate)
 
     if (newEndDate <= currentEndDate) {

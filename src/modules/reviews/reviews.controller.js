@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Controlador REST para operaciones de reseñas.
+ */
+
 import { isValidObjectId } from 'mongoose'
 import { Booking } from '../bookings/bookings.model.js'
 import { Review, validateReview, validateReviewUpdate } from './reviews.model.js'
@@ -139,6 +143,10 @@ export async function createNewReview(req, res) {
       return res
         .status(403)
         .json({ message: 'No tienes permisos para crear una reseña de esta reserva' })
+    }
+
+    if (booking.status === 'canceled') {
+      return res.status(400).json({ message: 'No se pueden crear reseñas de reservas canceladas' })
     }
 
     // Verificar que la reserva ya haya finalizado

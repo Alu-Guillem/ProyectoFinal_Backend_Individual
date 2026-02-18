@@ -1,10 +1,15 @@
+/**
+ * @fileoverview Define el esquema de reseñas de MongoDB y validaciones asociadas.
+ */
+
 import { Schema, model } from 'mongoose'
 import {
   isPositiveNumber,
   isRequired,
-  isInteger,
   validateSchema,
   isValidString,
+  isBetween,
+  maxLength,
 } from '#libs/validation/index.js'
 import { formatDate } from '#commons/index.js'
 
@@ -64,8 +69,12 @@ export const Review = model('Review', ReviewDatabaseSchema)
  */
 export const ReviewInputSchema = {
   bookingId: [isRequired('id de la reserva')],
-  rate: [isRequired('calificación'), isPositiveNumber('calificación')],
-  comment: [isRequired('comentario'), isValidString('comentario')],
+  rate: [
+    isRequired('calificación'),
+    isPositiveNumber('calificación'),
+    isBetween('calificación', 0.5, 5),
+  ],
+  comment: [isRequired('comentario'), isValidString('comentario'), maxLength('comentario', 250)],
 }
 
 /**
@@ -82,8 +91,12 @@ export const validateReview = ReviewData => {
  * @type {import('types').ValidationSchema}
  */
 export const ReviewUpdateSchema = {
-  rate: [isRequired('calificación'), isInteger('calificación'), isPositiveNumber('calificación')],
-  comment: [isRequired('comentario'), isValidString('comentario')],
+  rate: [
+    isRequired('calificación'),
+    isPositiveNumber('calificación'),
+    isBetween('calificación', 0.5, 5),
+  ],
+  comment: [isRequired('comentario'), isValidString('comentario'), maxLength('comentario', 250)],
 }
 
 /**

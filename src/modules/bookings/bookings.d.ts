@@ -1,5 +1,8 @@
 import { Types } from 'mongoose'
 
+/**
+ * Contrato tipado de reserva compartido entre capa de datos y lógica de negocio.
+ */
 export interface Booking {
   bookingId?: Types.ObjectId
   userId?: Types.ObjectId

@@ -148,7 +148,7 @@ export async function createNewBooking(req, res) {
     const discount =
       validatedBooking.discount !== undefined && (role === 'employee' || role === 'admin')
         ? validatedBooking.discount
-        : room.offer
+        : Number(room.offer ?? 0)
     // Cálculos de precios
     const totalNights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
     const pricePerNight = parseFloat((room.pricePerNight * (1 - discount / 100)).toFixed(2))
@@ -194,7 +194,7 @@ export async function createNewBooking(req, res) {
 
     res.status(201).json(savedBooking)
   } catch (error) {
-    console.dir(error.errInfo.details || error, { depth: null })
+    console.dir(error, { depth: null })
     res.status(500).json({ message: 'Error del servidor' })
   }
 }

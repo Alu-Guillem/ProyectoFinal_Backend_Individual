@@ -2,10 +2,18 @@ version: '3.8'
 services:
   hotel-api:
     build: .
-    ports:
-      - '3000:3000'
+    container_name: hotel
+    networks:
+      - hotel-net
+      - proxy-net
+    restart: unless-stopped
+    env_file:
+      - ../../.env
     volumes:
       - ./src:/app/src
-    command: ['node', 'index.js']
-    env_file:
-      - .env
+
+networks:
+  hotel-net:
+    external: true
+  proxy-net:
+    external: true

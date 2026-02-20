@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Controlador REST de reservas con validaciones de negocio.
+ */
+
 import { formatDate, parseDate } from '#commons/index.js'
 import { Booking, validateBooking, validateBookingUpdate } from './bookings.model.js'
 import { Room } from '#modules/rooms/rooms.model.js'
@@ -19,7 +23,6 @@ import { sendEmail } from '#libs/mailing/index.js'
  * Customers solo pueden ver sus propias reservas.
  *
  * @response 200 - Array de reservas encontradas
- * @response 404 - No se encontraron reservas
  * @response 500 - Error del servidor
  */
 export async function getBookings(req, res) {
@@ -31,10 +34,7 @@ export async function getBookings(req, res) {
       filter.userId = userId
     }
 
-    const bookings = await Booking.find(filter)
-
-    if (bookings.length === 0)
-      return res.status(404).json({ message: 'No se encontraron reservas' })
+    const bookings = await Booking.find(filter).sort({ bookingDate: -1 })
 
     res.status(200).json(bookings)
   } catch (error) {
@@ -130,7 +130,11 @@ export async function createNewBooking(req, res) {
 
     // Verificar disponibilidad
     // Se obtienen todas las reservas de la habitación para comprobar conflicto
-    const existingBookings = await Booking.find({ roomId: validatedBooking.roomId }).lean()
+    const existingBookings = await Booking.find({
+      roomId: validatedBooking.roomId,
+      status: 'active',
+      isPaid: true,
+    }).lean()
 
     // Objeto temporal con fechas parseadas para la verificación
     const tempBookingToCheck = { ...validatedBooking, startDate, endDate }
@@ -144,7 +148,7 @@ export async function createNewBooking(req, res) {
     const discount =
       validatedBooking.discount !== undefined && (role === 'employee' || role === 'admin')
         ? validatedBooking.discount
-        : room.offer
+        : Number(room.offer ?? 0)
     // Cálculos de precios
     const totalNights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
     const pricePerNight = parseFloat((room.pricePerNight * (1 - discount / 100)).toFixed(2))
@@ -190,7 +194,7 @@ export async function createNewBooking(req, res) {
 
     res.status(201).json(savedBooking)
   } catch (error) {
-    console.dir(error.errInfo.details || error, { depth: null })
+    console.dir(error, { depth: null })
     res.status(500).json({ message: 'Error del servidor' })
   }
 }
@@ -362,6 +366,8 @@ export async function updateBooking(req, res) {
 
       const otherBookings = await Booking.find({
         roomId: booking.roomId,
+        status: 'active',
+        isPaid: true,
         _id: { $ne: booking._id },
       }).lean()
 
@@ -422,6 +428,10 @@ export async function cancelBooking(req, res) {
 
     const booking = await Booking.findOne(filter)
     if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
+
+    if (booking.status === 'canceled') {
+      return res.status(409).json({ message: 'La reserva ya esta cancelada' })
+    }
 
     booking.status = 'canceled'
     await booking.save()
@@ -491,8 +501,49 @@ export async function payBooking(req, res) {
     const booking = await Booking.findOne(filter)
     if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
 
+    // Validar que la reserva no esté cancelada
+    if (booking.status === 'canceled') {
+      return res.status(400).json({ message: 'No se puede pagar una reserva cancelada' })
+    }
+
     if (booking.isPaid) {
       return res.status(409).json({ message: 'Ya has pagado esta reserva' })
+    }
+
+    // Validar que las fechas siguen siendo válidas (la reserva aún no ha pasado)
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    const bookingEndDate = new Date(booking.endDate)
+    bookingEndDate.setHours(0, 0, 0, 0)
+
+    if (bookingEndDate < now) {
+      return res
+        .status(400)
+        .json({ message: 'No se puede pagar una reserva cuya fecha de fin ya ha pasado' })
+    }
+
+    // Validar que la habitación sigue siendo disponible para el período de la reserva
+    const otherBookings = await Booking.find({
+      roomId: booking.roomId,
+      status: 'active',
+      isPaid: true,
+      _id: { $ne: booking._id },
+    }).lean()
+
+    const bookingPeriod = {
+      startDate: new Date(booking.startDate),
+      endDate: new Date(booking.endDate),
+    }
+
+    if (!isAvailable(otherBookings, bookingPeriod)) {
+      // Cancelar la reserva automáticamente si la habitación ya no está disponible
+      booking.status = 'canceled'
+      await booking.save()
+
+      return res.status(400).json({
+        message:
+          'La habitación ya no está disponible para las fechas de esta reserva. La reserva ha sido cancelada automáticamente.',
+      })
     }
 
     booking.isPaid = true
@@ -569,6 +620,11 @@ export async function extendBooking(req, res) {
       return res.status(400).json({ message: 'No se puede extender una reserva cancelada' })
 
     const newEndDate = parseDate(endDate)
+    if (!newEndDate) {
+      return res
+        .status(400)
+        .json({ message: 'La fecha de fin debe tener el formato DD/MM/YYYY y ser válida' })
+    }
     const currentEndDate = new Date(booking.endDate)
 
     if (newEndDate <= currentEndDate) {
@@ -581,6 +637,8 @@ export async function extendBooking(req, res) {
     // Buscamos conflictos SOLO para el rango nuevo [currentEndDate, newEndDate]
     const otherBookings = await Booking.find({
       roomId: booking.roomId,
+      status: 'active',
+      isPaid: true,
       _id: { $ne: booking._id },
     })
 

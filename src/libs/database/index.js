@@ -14,6 +14,7 @@ import mongoose from 'mongoose'
 
 import bookingSchema from '#modules/bookings/bookings.schema.js'
 import usersSchema from '#r/modules/users/users.schema.js'
+import reviewsSchema from '#r/modules/reviews/reviews.schema.js'
 
 /**
  * URI de conexión a MongoDB Atlas
@@ -29,7 +30,7 @@ const URI = DB_URI
  * @constant {Array<Function>}
  * @private
  */
-const schemaRegistry = [bookingSchema, usersSchema]
+const schemaRegistry = [bookingSchema, usersSchema, reviewsSchema]
 
 /**
  * Establece la conexión con la base de datos MongoDB

@@ -16,6 +16,7 @@
  * @requires #libs/mailing
  */
 
+import path from 'path'
 import express from 'express'
 import router from '#r/router.js'
 import morgan from 'morgan'
@@ -49,6 +50,9 @@ startBookingReminders()
 
 /** Parser de JSON para el body de las peticiones */
 app.use(express.json())
+
+//Subida de fotos
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 /** Logger de peticiones HTTP en modo desarrollo */
 app.use(morgan('dev'))

@@ -7,7 +7,7 @@ import { Booking, validateBooking, validateBookingUpdate } from './bookings.mode
 import { Room } from '#modules/rooms/rooms.model.js'
 import { isAvailable } from './utils/index.js'
 import { isValidObjectId, Types } from 'mongoose'
-import { User } from '#modules/users/users.model.js'
+import { Customer, User } from '#modules/users/users.model.js'
 import { sendEmail } from '#libs/mailing/index.js'
 
 /**
@@ -145,10 +145,17 @@ export async function createNewBooking(req, res) {
         .json({ message: 'La habitación no está disponible en las fechas seleccionadas' })
     }
 
-    const discount =
-      validatedBooking.discount !== undefined && (role === 'employee' || role === 'admin')
-        ? validatedBooking.discount
-        : Number(room.offer ?? 0)
+    // Descuento base por oferta
+    let discount = Number(room.offer ?? 0)
+    // Si el usuario es VIP, sumar 10%
+    const customer = await Customer.findById(validatedBooking.userId).lean()
+    if (customer && customer.vip === true) {
+      discount += 10
+    }
+    // Si el descuento viene por admin/employee, usar ese valor
+    if (validatedBooking.discount !== undefined && (role === 'employee' || role === 'admin')) {
+      discount += validatedBooking.discount
+    }
     // Cálculos de precios
     const totalNights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
     const pricePerNight = parseFloat((room.pricePerNight * (1 - discount / 100)).toFixed(2))
@@ -176,7 +183,6 @@ export async function createNewBooking(req, res) {
     const savedBooking = await newBooking.save()
 
     try {
-      const customer = await User.findById(validatedBooking.userId).lean()
       if (customer?.email) {
         const customerName = `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
         await sendEmail(customer.email, 'Reserva creada', 'new-booking', {
@@ -305,13 +311,20 @@ export async function updateBooking(req, res) {
     const room = await Room.findById(booking.roomId).lean()
     if (!room) return res.status(404).json({ message: 'Habitación no encontrada' })
 
-    if (discount !== undefined && (role === 'employee' || role === 'admin')) {
-      booking.discount = discount
-      booking.pricePerNight = parseFloat(
-        (room.pricePerNight * (1 - booking.discount / 100)).toFixed(2),
-      )
-      booking.totalPrice = parseFloat((booking.totalNights * booking.pricePerNight).toFixed(2))
+    // Recalcular descuento: oferta + VIP + admin/employee
+    let newDiscount = Number(room.offer ?? 0)
+    const customer = await Customer.findById(booking.userId).lean()
+    if (customer && customer.vip === true) {
+      newDiscount += 10
     }
+    if (discount !== undefined && (role === 'employee' || role === 'admin')) {
+      newDiscount += discount
+    }
+    booking.discount = newDiscount
+    booking.pricePerNight = parseFloat(
+      (room.pricePerNight * (1 - booking.discount / 100)).toFixed(2),
+    )
+    booking.totalPrice = parseFloat((booking.totalNights * booking.pricePerNight).toFixed(2))
 
     // Validar ocupantes
     if (occupants !== undefined) {
@@ -653,14 +666,24 @@ export async function extendBooking(req, res) {
       })
     }
 
+    // Recalcular descuento: oferta + VIP
+    const room = await Room.findById(booking.roomId).lean()
+    let newDiscount = Number(room.offer ?? 0)
+    const customer = await Customer.findById(booking.userId).lean()
+    if (customer && customer.vip === true) {
+      newDiscount += 10
+    }
+    booking.discount = newDiscount
+    // Recalcular precio por noche
+    booking.pricePerNight = parseFloat(
+      (room.pricePerNight * (1 - booking.discount / 100)).toFixed(2),
+    )
     const additionalNights = Math.ceil(
       (newEndDate.getTime() - currentEndDate.getTime()) / (1000 * 60 * 60 * 24),
     )
-    const additionalPrice = additionalNights * booking.pricePerNight
-
     booking.endDate = newEndDate
     booking.totalNights += additionalNights
-    booking.totalPrice += additionalPrice
+    booking.totalPrice = parseFloat((booking.totalNights * booking.pricePerNight).toFixed(2))
 
     await booking.save()
 

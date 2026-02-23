@@ -57,29 +57,44 @@ export const createRoom = async (req, res) => {
   try {
     const { name, type, number, pricePerNight, occupancyLimit, description, offer } = req.body
 
-    console.log('Datos recibidos:', req.body)
+    console.log("Datos recibidos:", req.body)
 
     if (
       isNaN(number) ||
       isNaN(pricePerNight) ||
       isNaN(occupancyLimit) ||
-      isNaN(offer)
+      (offer !== undefined && isNaN(offer))
     ) {
       return res.status(400).json({
-        error: 'numero, precio y la ocupacion deben ser números'
+        error: "numero, precio, ocupacion y oferta deben ser números"
       })
     }
 
     const existingRoom = await Room.findOne({ name, type })
-
     if (existingRoom) {
       return res.status(409).json({
-        error: 'Ya existe una habitación con ese nombre y tipo'
+        error: "Ya existe una habitación con ese nombre y tipo"
       })
     }
 
-    const room = new Room({ name, type, number, pricePerNight, occupancyLimit, description, offer })
+    //Imagen
+    const roomData = {
+      name,
+      type,
+      number,
+      pricePerNight,
+      occupancyLimit,
+      description,
+      offer
+    }
+
+    if (req.file) {
+      roomData.image = `./uploads/${req.file.filename}`
+    }
+
+    const room = new Room(roomData)
     await room.save()
+
     res.status(201).json(room)
 
   } catch (error) {
@@ -101,7 +116,7 @@ export const updateRoom = async (req, res) => {
       (offer !== undefined && isNaN(offer))
     ) {
       return res.status(400).json({
-        error: 'numero, precio, ocupacion y oferta deben ser números'
+        error: "numero, precio, ocupacion y oferta deben ser números"
       })
     }
 
@@ -114,19 +129,25 @@ export const updateRoom = async (req, res) => {
 
       if (existingRoom) {
         return res.status(409).json({
-          error: 'Ya existe otra habitación con ese nombre y tipo'
+          error: "Ya existe otra habitación con ese nombre y tipo"
         })
       }
     }
 
+    const roomData = req.body
+
+    if (req.file) {
+      roomData.image = `./uploads/${req.file.filename}`
+    }
+
     const updatedRoom = await Room.findByIdAndUpdate(
       id,
-      req.body,
+      roomData,
       { new: true, runValidators: true }
     )
 
     if (!updatedRoom) {
-      return res.status(404).json({ error: 'Habitación no encontrada' })
+      return res.status(404).json({ error: "Habitación no encontrada" })
     }
 
     res.json(updatedRoom)

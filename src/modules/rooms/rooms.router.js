@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { upload } from './rooms.middleware';
 import { 
     getRoom,
     getOneRoom,
@@ -10,8 +11,11 @@ const router = Router()
 
 router.get('/', getRoom)
 router.get('/:id', getOneRoom)
-router.post('/', createRoom);
-router.put('/:id', updateRoom)
+
+router.post('/', upload.single("image"), createRoom)
+router.put('/:id', upload.single("image"), updateRoom)
+
 router.delete('/:id', deleteRoom)
+
 
 export default router

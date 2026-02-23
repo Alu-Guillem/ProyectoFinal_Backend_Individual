@@ -53,6 +53,9 @@ app.use(express.json())
 /** Logger de peticiones HTTP en modo desarrollo */
 app.use(morgan('dev'))
 
+/* Acceso para las imagenes de rooms */
+app.use("/uploads", express.static("uploads"));
+
 // ─────────────────────────────────────────────────────────────
 // Rutas
 // ─────────────────────────────────────────────────────────────

@@ -30,6 +30,9 @@ export const RoomSchema = new Schema({
   },
   offer: {
     type: Number
+  },
+  image:{
+    type: String
   }
 },
 {

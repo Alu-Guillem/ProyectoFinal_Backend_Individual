@@ -49,6 +49,7 @@ export const UserSchema = new Schema(
     },
     photo: {
       type: String,
+      required: false,
     },
   },
   {

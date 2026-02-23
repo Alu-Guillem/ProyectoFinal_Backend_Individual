@@ -1,3 +1,6 @@
+import fs from 'fs'
+import path from 'path'
+
 import { JWT_SECRET } from '#r/constants.js'
 import { getAge, parseDate } from '#commons/index.js'
 import { Customer, User, validateCustomer } from '#modules/users/users.model.js'
@@ -6,6 +9,12 @@ import { validateLogin } from './auth.model.js'
 import { sendEmail } from '#libs/mailing/index.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
+
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+}
 
 /**
  * Registra un nuevo Customer
@@ -43,65 +52,69 @@ import jwt from 'jsonwebtoken'
  * - Género válido
  */
 export async function register(req, res) {
+  let uploadedFilePath = null
+
   try {
     const userData = req.body
 
     if (!userData) {
-      return res.status(400).json({ message: 'Datos de usuarios no proporcionados' })
+      return res.status(400).json({ message: 'Datos de usuario no proporcionados' })
     }
 
+    // Guardamos la ruta de la foto si se sube
+    if (req.file) {
+      uploadedFilePath = path.join(UPLOAD_DIR, req.file.filename)
+    }
+
+    // Validar datos del cliente
     let validatedCustomer
     try {
       validatedCustomer = validateCustomer(userData)
     } catch (err) {
+      // Si hay foto, borrarla porque no vamos a registrar
+      if (uploadedFilePath && fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath)
       return res.status(400).json(err)
     }
-    const birthDate = parseDate(validatedCustomer.birthDate)
-    const password = await hashPassword(validatedCustomer.password)
 
-    console.log('validatedCustomer:', validatedCustomer)
-    console.log('birthDate:', birthDate)
+    const birthDate = parseDate(validatedCustomer.birthDate)
+    if (!birthDate) {
+      if (uploadedFilePath && fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath)
+      return res.status(400).json({ message: 'Fecha de nacimiento inválida' })
+    }
 
     const age = getAge(birthDate)
     if (age < 18) {
-      return res.status(400).json({ message: 'Has de ser mayor de edad para poder registrarte' })
+      if (uploadedFilePath && fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath)
+      return res.status(400).json({ message: 'Debes ser mayor de edad' })
     }
 
+    const password = await hashPassword(validatedCustomer.password)
+
+    // Crear el Customer en la DB
     const newCustomer = new Customer({
       ...validatedCustomer,
       birthDate,
       password,
+      ...(uploadedFilePath && { photo: `/uploads/${req.file.filename}` }),
     })
 
-    const customerSaved = await newCustomer.save()
+    const savedCustomer = await newCustomer.save()
 
-    try {
-      if (customerSaved?.email) {
-        const customerName =
-          `${customerSaved.firstName ?? ''} ${customerSaved.lastName ?? ''}`.trim()
-        await sendEmail(customerSaved.email, 'Bienvenido a Pere Maria Hotel', 'welcome', {
-          name: customerName || customerSaved.email,
-        })
-      }
-    } catch (mailError) {
-      console.error('Error al enviar correo de bienvenida:', mailError)
-    }
+    const token = jwt.sign({ userId: savedCustomer._id, role: savedCustomer.role }, JWT_SECRET, {
+      expiresIn: '15d',
+    })
 
-    if (!customerSaved) {
-      return res.status(400).json({ message: 'No se ha podido guardar el usuario' })
-    }
-
-    const accesToken = jwt.sign(
-      { userId: customerSaved._id, role: customerSaved.role },
-      JWT_SECRET,
-      { expiresIn: '15d' },
-    )
-
-    res.status(200).json({ token: accesToken })
+    res.status(200).json({ token, photo: savedCustomer.photo })
   } catch (error) {
+    console.error(error)
+
+    // Borrar foto si algo falla
+    if (uploadedFilePath && fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath)
+
     if (error.code === 11000) {
       return res.status(400).json({ message: 'El correo electrónico ya está registrado' })
     }
+
     res.status(500).json({ message: 'Error del servidor' })
   }
 }

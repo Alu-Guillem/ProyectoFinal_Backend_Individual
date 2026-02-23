@@ -44,7 +44,10 @@ const UsersCollectionSchema = {
           enum: ['customer', 'admin', 'employee'],
           description: 'El rol del usuario',
         },
-        photo: { bsonType: 'string' },
+        photo: {
+          bsonType: ['string', 'null'],
+          description: 'URL de la foto del usuario',
+        },
       },
       oneOf: [
         {

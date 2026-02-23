@@ -1,3 +1,7 @@
+import multer from 'multer'
+import fs from 'fs'
+import path from 'path'
+
 /**
  * @fileoverview Utilidades comunes para manejo de fechas
  * @module commons
@@ -81,3 +85,22 @@ export function getAge(date) {
 
   return year
 }
+
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
+
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+})
+
+export const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) return cb(new Error('Solo se permiten imágenes'))
+    cb(null, true)
+  },
+})

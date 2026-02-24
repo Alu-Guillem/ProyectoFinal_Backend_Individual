@@ -8,6 +8,7 @@ export const getRoom = async (req, res) => {
   try {
     // Filtros desde query params
     const {
+      name,
       startDate,
       endDate,
       occupants,
@@ -20,6 +21,9 @@ export const getRoom = async (req, res) => {
     } = req.query
 
     const mongoFilter = {}
+    if (name) {
+      mongoFilter.name = { $regex: name, $options: "i" }; 
+    }
     if (occupants) mongoFilter.occupancyLimit = { $gte: Number(occupants) }
     if (needsExtraBed === 'true') mongoFilter.hasExtraBed = true
     if (needsCrib === 'true') mongoFilter.hasCradle = true

@@ -182,6 +182,14 @@ export async function createNewBooking(req, res) {
 
     const savedBooking = await newBooking.save()
 
+    // Añadir tiempo de mantenimiento a la habitación
+    try {
+      var roomMaintenance = await Room.findById(newBooking.roomId)
+      const maintenanceDate = new Date(newBooking.endDate)
+      maintenanceDate.setDate(maintenanceDate.getDate() + 1)
+      roomMaintenance.maintenanceTime = maintenanceDate
+    }catch(error){}
+
     try {
       if (customer?.email) {
         const customerName = `${customer.firstName ?? ''} ${customer.lastName ?? ''}`.trim()
@@ -197,7 +205,6 @@ export async function createNewBooking(req, res) {
     } catch (mailError) {
       console.error('Error al enviar correo de reserva:', mailError)
     }
-
     res.status(201).json(savedBooking)
   } catch (error) {
     console.dir(error, { depth: null })
@@ -238,7 +245,7 @@ export async function getOneBooking(req, res) {
 
     const booking = await Booking.findOne(filter)
     if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
-
+    
     res.status(200).json(booking)
   } catch (error) {
     console.error(error)
@@ -397,7 +404,6 @@ export async function updateBooking(req, res) {
       booking.totalNights = totalNights
       booking.totalPrice = parseFloat((totalNights * booking.pricePerNight).toFixed(2))
     }
-
     await booking.save()
     res.status(200).json(booking)
   } catch (error) {
@@ -471,7 +477,6 @@ export async function cancelBooking(req, res) {
     } catch (mailError) {
       console.error('Error al enviar correo de cancelacion:', mailError)
     }
-
     res.status(200).json({ message: 'Reserva cancelada correctamente' })
   } catch (error) {
     console.error(error)

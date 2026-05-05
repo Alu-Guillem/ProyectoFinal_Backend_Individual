@@ -2,9 +2,12 @@ import { Room } from './rooms.model.js'
 import { Booking } from '../bookings/bookings.model.js'
 import { Review } from '../reviews/reviews.model.js'
 import { isAvailable } from '../bookings/utils/index.js'
-
+import e from 'express'
+import bookingsSchema from '../bookings/bookings.schema.js'
 // GET api/rooms
 export const getRoom = async (req, res) => {
+  toggleOccuped()
+  toggleMaintenance()
   try {
     // Filtros desde query params
     const {
@@ -40,6 +43,9 @@ export const getRoom = async (req, res) => {
 
     let rooms = await Room.find(mongoFilter).lean()
 
+    var today = new Date();
+
+    
     if (minimumRating) {
       const roomIds = rooms.map(r => r._id)
 
@@ -132,7 +138,7 @@ export const createRoom = async (req, res) => {
 export const updateRoom = async (req, res) => {
   try {
     const { id } = req.params
-    const { name, type, number, pricePerNight, occupancyLimit, description, offer } = req.body
+    const { name, type, number, pricePerNight, occupancyLimit, description, offer, closed, maintenance, maintenanceTime } = req.body
 
     if (
       (number !== undefined && isNaN(number)) ||
@@ -190,6 +196,110 @@ export const deleteRoom = async (req, res) => {
     res.json({
       message: 'Habitación eliminada correctamente',
       room: deletedRoom,
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+//GET api/rooms/stats
+export const getRoomStats = async (req, res) => {
+  try {
+    const stats = await Booking.aggregate([
+      {
+        $group: {
+          _id: '$roomId',
+          totalBookings: { $sum: 1 },
+          totalRevenue: { $sum: '$totalPrice' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'rooms',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'room'
+        }
+      },
+      { $unwind: '$room' },
+      {
+        $project: {
+          roomId: '$_id',
+          name: '$room.name',
+          totalBookings: 1
+        }
+      }
+    ])
+
+    res.json(stats)
+  } catch (error) {
+    res.status(500).json({ error: 'Error obteniendo estadísticas' })
+  }
+}
+
+
+//Cambiar esdado de ocupada a libre o viceversa
+export const toggleOccuped = async () => {
+  const today = new Date()
+
+  try {
+
+    const activeBookings = await Booking.find({
+      startDate: { $lte: today },
+      endDate: { $gte: today }
+    }).lean()
+
+    const occupiedRoomIds = activeBookings.map(b => b.roomId)
+
+    await Room.updateMany(
+      { _id: { $in: occupiedRoomIds } },
+      { occuped: true }
+    )
+
+    await Room.updateMany(
+      { _id: { $nin: occupiedRoomIds } },
+      { occuped: false }
+    )
+
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+
+// Cambiar estado de mantenimiento a true o false dependiendo de la fecha
+export const toggleMaintenance = async () => {
+  const today = new Date()
+
+  try {
+
+    await Room.updateMany(
+      { maintenanceTime: { $gte: today } },
+      { maintenance: true }
+    )
+
+    await Room.updateMany(
+      { maintenanceTime: { $lt: today } },
+      { maintenance: false }
+    )
+
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+//Cerrar la habiacion
+export const closeRoom = async (req, res) => {
+  try {
+    const { id } = req.params
+    const room = await Room.findById(id)
+    const closed = room.closed
+    console.log("Test - " + closed + " - " + room.closed)
+    room.closed = !closed
+    
+    res.json({
+      message: `Habitación ${closed ? 'reabierta' : 'cerrada'} correctamente`,
+      room: await room.save(),
     })
   } catch (error) {
     res.status(500).json({ error: error.message })

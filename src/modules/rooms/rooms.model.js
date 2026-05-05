@@ -21,6 +21,21 @@ export const RoomSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  reserved: {
+    type: Boolean,
+    default: false
+  },
+  maintenance: {
+    type: Boolean,
+    default: false
+  },
+  maintenanceTime: {
+    type: Date
+  },
+  closed: {
+    type: Boolean,
+    default: false
+  },
   occupancyLimit: {
     type: Number,
     required: true,

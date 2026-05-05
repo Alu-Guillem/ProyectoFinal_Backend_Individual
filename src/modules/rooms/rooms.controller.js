@@ -4,6 +4,7 @@ import { Review } from '../reviews/reviews.model.js'
 import { isAvailable } from '../bookings/utils/index.js'
 import e from 'express'
 import bookingsSchema from '../bookings/bookings.schema.js'
+import { type } from 'node:os'
 // GET api/rooms
 export const getRoom = async (req, res) => {
   toggleOccuped()
@@ -207,6 +208,12 @@ export const getRoomStats = async (req, res) => {
   try {
     const stats = await Booking.aggregate([
       {
+        $match: {
+          status: 'active',
+          isPaid: true
+        }
+      },
+      {
         $group: {
           _id: '$roomId',
           totalBookings: { $sum: 1 },
@@ -226,7 +233,9 @@ export const getRoomStats = async (req, res) => {
         $project: {
           roomId: '$_id',
           name: '$room.name',
-          totalBookings: 1
+          type: '$room.type',
+          totalBookings: 1,
+          totalRevenue: 1
         }
       }
     ])

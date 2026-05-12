@@ -5,6 +5,7 @@ import { isAvailable } from '../bookings/utils/index.js'
 import e from 'express'
 import bookingsSchema from '../bookings/bookings.schema.js'
 import { type } from 'node:os'
+import { Types } from 'mongoose'
 // GET api/rooms
 export const getRoom = async (req, res) => {
   toggleOccuped()
@@ -203,15 +204,31 @@ export const deleteRoom = async (req, res) => {
   }
 }
 
-//GET api/rooms/stats
+//GET api/rooms/stats/:year?
 export const getRoomStats = async (req, res) => {
   try {
+
+    const { year } = req.params
+
+    const matchFilter = {
+      status: 'active',
+      isPaid: true
+    }
+
+    if (year) {
+
+      const startDate = new Date(`${year}-01-01`)
+      const endDate = new Date(`${Number(year) + 1}-01-01`)
+
+      matchFilter.bookingDate = {
+        $gte: startDate,
+        $lt: endDate
+      }
+    }
+
     const stats = await Booking.aggregate([
       {
-        $match: {
-          status: 'active',
-          isPaid: true
-        }
+        $match: matchFilter
       },
       {
         $group: {
@@ -228,9 +245,12 @@ export const getRoomStats = async (req, res) => {
           as: 'room'
         }
       },
-      { $unwind: '$room' },
+      {
+        $unwind: '$room'
+      },
       {
         $project: {
+          _id: 0,
           roomId: '$_id',
           name: '$room.name',
           type: '$room.type',
@@ -241,8 +261,108 @@ export const getRoomStats = async (req, res) => {
     ])
 
     res.json(stats)
+
   } catch (error) {
-    res.status(500).json({ error: 'Error obteniendo estadísticas' })
+    console.error(error)
+    res.status(500).json({
+      error: 'Error obteniendo estadísticas'
+    })
+  }
+}
+
+
+//GET api/rooms/:id/occupancy
+export const getRoomOccupancy = async (req, res) => {
+  try {
+
+    const { id } = req.params
+    const { year } = req.query
+
+    if (!year) {
+      return res.status(400).json({
+        error: 'Debes indicar un año'
+      })
+    }
+
+    const startDate = new Date(`${year}-01-01`)
+    const endDate = new Date(`${Number(year) + 1}-01-01`)
+
+    const stats = await Booking.aggregate([
+
+      {
+        $match: {
+          roomId: new Types.ObjectId(id),
+          status: 'active',
+          isPaid: true,
+          bookingDate: {
+            $gte: startDate,
+            $lt: endDate
+          }
+        }
+      },
+
+      {
+        $group: {
+
+          _id: {
+            month: { $month: '$bookingDate' }
+          },
+
+          totalRevenue: {
+            $sum: '$totalPrice'
+          },
+
+          totalBookings: {
+            $sum: 1
+          },
+
+          avgOccupants: {
+            $avg: '$occupants'
+          },
+
+          avgNights: {
+            $avg: '$totalNights'
+          }
+        }
+      },
+
+      {
+        $project: {
+          _id: 0,
+          month: '$_id.month',
+
+          totalRevenue: {
+            $round: ['$totalRevenue', 2]
+          },
+
+          totalBookings: 1,
+
+          avgOccupants: {
+            $round: ['$avgOccupants', 2]
+          },
+
+          avgNights: {
+            $round: ['$avgNights', 2]
+          }
+        }
+      },
+
+      {
+        $sort: {
+          month: 1
+        }
+      }
+
+    ])
+
+    res.json(stats)
+
+  } catch (error) {
+    console.error(error)
+
+    res.status(500).json({
+      error: 'Error obteniendo ocupación'
+    })
   }
 }
 

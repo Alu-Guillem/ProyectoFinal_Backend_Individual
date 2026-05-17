@@ -24,27 +24,43 @@ export const getRoom = async (req, res) => {
       priceMin,
       priceMax,
       minimumRating,
+      maintenance,
+      closed,
     } = req.query
 
     const mongoFilter = {}
+    //Nombre
     if (name) {
       mongoFilter.name = { $regex: name, $options: "i" }; 
     }
+    //Ocupada
     if (occuped !== undefined) {
       mongoFilter.occuped = occuped === "true";
     }
+
     if (occupants) mongoFilter.occupancyLimit = { $gte: Number(occupants) }
     if (needsExtraBed === 'true') mongoFilter.hasExtraBed = true
     if (needsCrib === 'true') mongoFilter.hasCradle = true
     if (onlyOffers === 'true') mongoFilter.offer = { $gt: 0 }
+
+    //precio
     if (priceMin || priceMax) {
       mongoFilter.pricePerNight = {}
       if (priceMin) mongoFilter.pricePerNight.$gte = Number(priceMin)
       if (priceMax) mongoFilter.pricePerNight.$lte = Number(priceMax)
     }
+    
+    //Mantenimiento
+    if(maintenance) {
+      mongoFilter.maintenance = maintenance === "true";
+    }
+    //Cerrada
+    if(closed) {
+      mongoFilter.closed = closed === "true";
+    }
 
     let rooms = await Room.find(mongoFilter).lean()
-
+    
     var today = new Date();
 
     
@@ -187,6 +203,18 @@ export const deleteRoom = async (req, res) => {
   try {
     const { id } = req.params
 
+    const room = await Room.findById(id)
+
+    if (!room) {
+      return res.status(404).json({ error: 'Habitación no encontrada' })
+    }
+
+    if (room.closed === false) {
+      return res.status(400).json({
+        error: 'La habitación debe estar cerrada para ser eliminada',
+      })
+    }
+
     const deletedRoom = await Room.findByIdAndDelete(id)
 
     if (!deletedRoom) {
@@ -271,18 +299,12 @@ export const getRoomStats = async (req, res) => {
 }
 
 
-//GET api/rooms/:id/occupancy
+//GET api/rooms/:id/occupancy/:year
 export const getRoomOccupancy = async (req, res) => {
   try {
 
     const { id } = req.params
-    const { year } = req.query
-
-    if (!year) {
-      return res.status(400).json({
-        error: 'Debes indicar un año'
-      })
-    }
+    const { year } = req.params
 
     const startDate = new Date(`${year}-01-01`)
     const endDate = new Date(`${Number(year) + 1}-01-01`)
@@ -370,12 +392,11 @@ export const getRoomOccupancy = async (req, res) => {
 //Cambiar esdado de ocupada a libre o viceversa
 export const toggleOccuped = async () => {
   const today = new Date()
-
   try {
 
     const activeBookings = await Booking.find({
       startDate: { $lte: today },
-      endDate: { $gte: today }
+      endDate: { $gt: today }
     }).lean()
 
     const occupiedRoomIds = activeBookings.map(b => b.roomId)
@@ -398,17 +419,26 @@ export const toggleOccuped = async () => {
 
 // Cambiar estado de mantenimiento a true o false dependiendo de la fecha
 export const toggleMaintenance = async () => {
-  const today = new Date()
+
+  const now = new Date()
 
   try {
 
+    // Habitaciones todavía en mantenimiento
+    const maintenanceRooms = await Room.find({
+      maintenanceTime: { $gte: now }
+    }).select('_id').lean()
+
+    const maintenanceRoomIds = maintenanceRooms.map(r => r._id)
+
+    // Marcar mantenimiento = true
     await Room.updateMany(
-      { maintenanceTime: { $gte: today } },
+      { _id: { $in: maintenanceRoomIds } },
       { maintenance: true }
     )
-
+    // Marcar mantenimiento = false
     await Room.updateMany(
-      { maintenanceTime: { $lt: today } },
+      { _id: { $nin: maintenanceRoomIds } },
       { maintenance: false }
     )
 

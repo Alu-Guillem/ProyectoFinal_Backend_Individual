@@ -21,6 +21,7 @@ import {
   payBooking,
 } from '#modules/bookings/bookings.controller.js'
 
+import { getInvoicePdf } from '#modules/invoices/invoice.controller.js'
 const router = Router()
 
 /**
@@ -93,5 +94,8 @@ router.put('/:id/pay', payBooking)
  * @param {string} id - ID de la reserva
  */
 router.delete('/:id', deleteBooking)
+
+//Ruta para generar PDF de factura de una reserva :)
+router.get('/:id/invoice', getInvoicePdf)
 
 export default router

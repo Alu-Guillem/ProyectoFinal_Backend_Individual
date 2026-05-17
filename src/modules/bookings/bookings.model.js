@@ -103,6 +103,10 @@ export const BookingDatabaseSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    invoiceNumber: {
+      type: String,
+      default: null
+    }
   },
   {
     toJSON: {

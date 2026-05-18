@@ -11,15 +11,12 @@ export const generateInvoiceNumber = async () => {
 
   const now = new Date()
 
-  const month = String(now.getMonth() + 1).padStart(2, '0')
+  //const month = String(now.getMonth() + 1).padStart(2, '0')
   const year = String(now.getFullYear()).slice(-2)
 
-  const prefix = `${month}${year}`
-
-  // Buscar última factura del mes
   const lastBooking = await Booking.findOne({
     invoiceNumber: {
-      $regex: `^${prefix}/`
+      $regex: `^${year}/`
     }
   })
     .sort({ invoiceNumber: -1 })
@@ -34,7 +31,7 @@ export const generateInvoiceNumber = async () => {
     nextNumber = lastSequence + 1
   }
 
-  return `${prefix}/${String(nextNumber).padStart(4, '0')}`
+  return `${year}/${String(nextNumber).padStart(4, '0')}`
 }
 
 

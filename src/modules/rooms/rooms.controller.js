@@ -391,27 +391,72 @@ export const getRoomOccupancy = async (req, res) => {
 
 //Cambiar esdado de ocupada a libre o viceversa
 export const toggleOccuped = async () => {
+
   const today = new Date()
+  const maintenanceHours = 12
+
   try {
 
+    // Reset general
+    await Room.updateMany(
+      {},
+      {
+        occuped: false,
+        maintenance: false
+      }
+    )
+
+    // HABITACIONES OCUPADAS
+
     const activeBookings = await Booking.find({
+
       startDate: { $lte: today },
-      endDate: { $gt: today }
+
+      endDate: { $gt: today },
+
+      status: 'active',
+      isPaid: true
+
     }).lean()
 
-    const occupiedRoomIds = activeBookings.map(b => b.roomId)
+    // Calcular fecha del mantenimiento
+    for (const booking of activeBookings) {
+      const maintenanceTime = new Date(booking.endDate) 
 
-    await Room.updateMany(
-      { _id: { $in: occupiedRoomIds } },
-      { occuped: true }
-    )
+      maintenanceTime.setHours(
+        maintenanceTime.getHours() + maintenanceHours
+      ) 
 
-    await Room.updateMany(
-      { _id: { $nin: occupiedRoomIds } },
-      { occuped: false }
-    )
+      await Room.updateOne(
+
+        { _id: booking.roomId },
+
+        {
+          occuped: true,
+          maintenanceTime
+        }
+      )
+    }
+
+    // MANTENIMIENTO
+
+    const roomsInMaintenance = await Room.find({
+
+      occuped: false,
+
+      maintenanceTime: { $gt: today }
+
+    })
+
+    for (const room of roomsInMaintenance) {
+
+      room.maintenance = true
+
+      await room.save()
+    }
 
   } catch (error) {
+
     console.log(error)
   }
 }
@@ -420,13 +465,12 @@ export const toggleOccuped = async () => {
 // Cambiar estado de mantenimiento a true o false dependiendo de la fecha
 export const toggleMaintenance = async () => {
 
-  const now = new Date()
-
+  const today = new Date()
+ 
   try {
 
-    // Habitaciones todavía en mantenimiento
     const maintenanceRooms = await Room.find({
-      maintenanceTime: { $gte: now }
+      maintenanceTime: { $gte: today }
     }).select('_id').lean()
 
     const maintenanceRoomIds = maintenanceRooms.map(r => r._id)

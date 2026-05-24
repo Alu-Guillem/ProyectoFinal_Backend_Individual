@@ -1,4 +1,5 @@
 import { model, Schema } from 'mongoose'
+import { type } from 'node:os'
 
 export const RoomSchema = new Schema({
   name:{
@@ -32,6 +33,13 @@ export const RoomSchema = new Schema({
   maintenanceTime: {
     type: Date
   },
+  maintenanceReason: {
+    type: String
+  },
+  cleaningTime: {
+    type: Number,
+    default: 2
+  },
   closed: {
     type: Boolean,
     default: false
@@ -45,6 +53,10 @@ export const RoomSchema = new Schema({
   },
   offer: {
     type: Number
+  },
+  image: {
+  type: String,
+  default: null
   }
 },
 {

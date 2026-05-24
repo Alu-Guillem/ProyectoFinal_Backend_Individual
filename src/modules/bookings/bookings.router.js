@@ -19,6 +19,8 @@ import {
   cancelBooking,
   extendBooking,
   payBooking,
+  getBookingAudit,
+  getAllBookingAudit
 } from '#modules/bookings/bookings.controller.js'
 
 import { getInvoicePdf } from '#modules/invoices/invoice.controller.js'
@@ -42,6 +44,15 @@ router.get('/', getBookings)
  * @body {string} [userId] - ID del usuario (solo admin/employee)
  */
 router.post('/', createNewBooking)
+
+
+//Ruta para obtener todos los logs de auditoría de reservas
+router.get('/audit', getAllBookingAudit)
+
+
+//Ruta para obtener logs de auditoría de una reserva
+router.get('/audit/:id', getBookingAudit)
+
 
 /**
  * @route GET /api/bookings/:id

@@ -388,16 +388,44 @@ export const getRoomOccupancy = async (req, res) => {
   }
 }
 
+// PATCH api/rooms/:id/cleaningTime
+export const editCleaningTime = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { hours } = req.body
+
+    if (hours === undefined || isNaN(hours)) {
+      return res.status(400).json({
+        error: 'Horas de limpieza inválidas'
+      })
+    }
+
+    const room = await Room.findById(id)
+
+    if (!room) {
+      return res.status(404).json({ error: 'Habitación no encontrada' })
+    }
+
+    room.cleaningTime = hours
+
+    return res.json({
+      message: 'Tiempo de limpieza actualizado correctamente',
+      room: await room.save()
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+
+}
+
 
 //Cambiar esdado de ocupada a libre o viceversa
 export const toggleOccuped = async () => {
 
   const today = new Date()
-  const maintenanceHours = 12
 
   try {
 
-    // Reset general
     await Room.updateMany(
       {},
       {
@@ -405,9 +433,6 @@ export const toggleOccuped = async () => {
         maintenance: false
       }
     )
-
-    // HABITACIONES OCUPADAS
-
     const activeBookings = await Booking.find({
 
       startDate: { $lte: today },
@@ -419,12 +444,14 @@ export const toggleOccuped = async () => {
 
     }).lean()
 
-    // Calcular fecha del mantenimiento
     for (const booking of activeBookings) {
       const maintenanceTime = new Date(booking.endDate) 
-
+      const room = await Room.findById(booking.roomId).lean()
+      if(room?.cleaningTime == undefined || isNaN(room.cleaningTime)) {
+          room.cleaningTime = 2
+        }
       maintenanceTime.setHours(
-        maintenanceTime.getHours() + maintenanceHours
+        maintenanceTime.getHours() + room.cleaningTime
       ) 
 
       await Room.updateOne(
@@ -438,22 +465,6 @@ export const toggleOccuped = async () => {
       )
     }
 
-    // MANTENIMIENTO
-
-    const roomsInMaintenance = await Room.find({
-
-      occuped: false,
-
-      maintenanceTime: { $gt: today }
-
-    })
-
-    for (const room of roomsInMaintenance) {
-
-      room.maintenance = true
-
-      await room.save()
-    }
 
   } catch (error) {
 
@@ -466,11 +477,12 @@ export const toggleOccuped = async () => {
 export const toggleMaintenance = async () => {
 
   const today = new Date()
- 
+
   try {
 
     const maintenanceRooms = await Room.find({
-      maintenanceTime: { $gte: today }
+      maintenanceTime: { $gt: today },
+      occuped: false
     }).select('_id').lean()
 
     const maintenanceRoomIds = maintenanceRooms.map(r => r._id)
@@ -491,7 +503,141 @@ export const toggleMaintenance = async () => {
   }
 }
 
-//Cerrar la habiacion
+// PUT api/rooms/:id/setMaintenance
+export const setRoomMaintenance = async (req, res) => {
+
+  try {
+
+    const { id } = req.params
+
+    const { date, hours, reason } = req.body
+
+    if (!date) {
+
+      return res.status(400).json({
+        message: 'Fecha no proporcionada'
+      })
+    }
+
+    if (
+      hours === undefined ||
+      isNaN(hours) ||
+      hours < 0 ||
+      hours > 23
+    ) {
+
+      return res.status(400).json({
+        message: 'Hora inválida'
+      })
+    }
+
+    if (!reason) {
+      return res.status(400).json({
+        message: 'Motivo de mantenimiento no proporcionado'
+      })
+    }
+
+    const room = await Room.findById(id)
+
+    if (!room) {
+
+      return res.status(404).json({
+        message: 'Habitación no encontrada'
+      })
+    }
+
+    if (room.occuped) {
+
+      return res.status(400).json({
+        message: 'La habitación está ocupada'
+      })
+    }
+
+    if (room.closed) {
+
+      return res.status(400).json({
+        message: 'La habitación está cerrada'
+      })
+    }
+
+    const maintenanceTime = new Date(date)
+
+    maintenanceTime.setHours(
+      Number(hours),
+      0,
+      0,
+      0
+    )
+
+    const now = new Date()
+    if (maintenanceTime <= now) {
+      return res.status(400).json({
+        message: 'La fecha de mantenimiento no puede ser en el pasado'
+      })
+    }
+
+    room.maintenance = true
+    room.maintenanceTime = maintenanceTime
+    room.maintenanceReason = reason
+    await room.save()
+
+    res.status(200).json({
+      message: 'Mantenimiento programado correctamente',
+      maintenanceTime
+    })
+
+  } catch (error) {
+
+    console.log(error)
+
+    res.status(500).json({
+      error: error.message 
+    })
+  }
+}
+
+//Cancelar mantenimiento de una habitacion
+export const cancelRoomMaintenance = async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!id) {
+      return res.status(400).json({
+        message: 'ID de habitación no proporcionado'
+      })
+    }
+
+    const room = await Room.findById(id)
+
+    if (!room) {
+      return res.status(404).json({
+        message: 'Habitación no encontrada'
+      })
+    }
+
+    if(!room.maintenance) {
+      return res.status(400).json({
+        message: 'La habitación no está en mantenimiento'
+      })
+    }
+
+    room.maintenance = false
+    room.maintenanceTime = undefined
+    room.maintenanceReason = undefined
+    await room.save()
+
+    return res.status(200).json({
+      message: 'Mantenimiento cancelado correctamente'
+    })
+
+  }catch (error) {
+    console.log(error)
+    res.status(500).json({
+      error: error.message
+    })
+  }
+}
+
+//PUT api/rooms/:id/close
 export const closeRoom = async (req, res) => {
   try {
     const { id } = req.params
@@ -506,5 +652,47 @@ export const closeRoom = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
+  }
+}
+
+//POST api/rooms/:id/image
+export const uploadRoomImage = async (req, res) => {
+
+  try {
+
+    const { id } = req.params
+
+    const room = await Room.findById(id)
+
+    if (!room) {
+
+      return res.status(404).json({
+        message: 'Habitación no encontrada'
+      })
+    }
+
+    if (!req.file) {
+
+      return res.status(400).json({
+        message: 'Imagen no proporcionada'
+      })
+    }
+
+    room.image = `/src/rooms/uploads/${req.file.filename}` //Ruta 
+
+    await room.save()
+
+    res.status(200).json({
+      message: 'Imagen subida correctamente',
+      image: room.image
+    })
+
+  } catch (error) {
+
+    console.log(error)
+
+    res.status(500).json({
+      message: 'Error del servidor'
+    })
   }
 }

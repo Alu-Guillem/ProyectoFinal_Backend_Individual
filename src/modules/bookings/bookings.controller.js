@@ -9,6 +9,8 @@ import { isAvailable } from './utils/index.js'
 import { isValidObjectId, Types } from 'mongoose'
 import { Customer, User } from '#modules/users/users.model.js'
 import { sendEmail } from '#libs/mailing/index.js'
+import { createAuditLog } from './utils/createAuditLog.js'
+import { BookingAuditLog } from './bookingAudit.model.js'
 
 /**
  * Obtiene todas las reservas según el rol del usuario
@@ -205,6 +207,17 @@ export async function createNewBooking(req, res) {
     } catch (mailError) {
       console.error('Error al enviar correo de reserva:', mailError)
     }
+
+    //Crear nuevo log de auditoría (crear/new reserva)
+    await createAuditLog({
+      bookingId: newBooking._id,
+      action: 'create',
+      actorId: userId,
+      actorType: role,
+      previousState: "N/A",
+      newState: newBooking.toObject()
+    })
+
     res.status(201).json(savedBooking)
   } catch (error) {
     console.dir(error, { depth: null })
@@ -283,6 +296,7 @@ export async function getOneBooking(req, res) {
  * @response 404 - Reserva o habitación no encontrada
  * @response 500 - Error del servidor
  */
+
 export async function updateBooking(req, res) {
   try {
     const { role, userId } = req.session
@@ -314,6 +328,9 @@ export async function updateBooking(req, res) {
     if (startDate === undefined && endDate === undefined && occupants === undefined) {
       return res.status(400).json({ message: 'Datos de la reserva no proporcionados' })
     }
+
+    // Guardar estado previo para auditoría
+    const previousState = booking.toObject()
 
     const room = await Room.findById(booking.roomId).lean()
     if (!room) return res.status(404).json({ message: 'Habitación no encontrada' })
@@ -405,6 +422,18 @@ export async function updateBooking(req, res) {
       booking.totalPrice = parseFloat((totalNights * booking.pricePerNight).toFixed(2))
     }
     await booking.save()
+
+    //Crear nuevo log de auditoría (editar/update reserva)
+  
+    await createAuditLog({
+      bookingId: booking._id,
+      action: 'update',
+      actorId: userId,
+      actorType: role,
+      previousState,
+      newState: booking.toObject()
+    })
+
     res.status(200).json(booking)
   } catch (error) {
     console.error(error)
@@ -452,6 +481,8 @@ export async function cancelBooking(req, res) {
       return res.status(409).json({ message: 'La reserva ya esta cancelada' })
     }
 
+    const previousState = booking.toObject()
+
     booking.status = 'canceled'
     await booking.save()
 
@@ -477,6 +508,16 @@ export async function cancelBooking(req, res) {
     } catch (mailError) {
       console.error('Error al enviar correo de cancelacion:', mailError)
     }
+
+    await createAuditLog({
+      bookingId: booking._id,
+      action: 'cancel',
+      actorId: userId,
+      actorType: role,
+      previousState,
+      newState: booking.toObject()
+    })
+
     res.status(200).json({ message: 'Reserva cancelada correctamente' })
   } catch (error) {
     console.error(error)
@@ -528,6 +569,8 @@ export async function payBooking(req, res) {
       return res.status(409).json({ message: 'Ya has pagado esta reserva' })
     }
 
+    const previousState = booking.toObject()
+
     // Validar que las fechas siguen siendo válidas (la reserva aún no ha pasado)
     const now = new Date()
     now.setHours(0, 0, 0, 0)
@@ -567,6 +610,15 @@ export async function payBooking(req, res) {
     booking.isPaid = true
     await booking.save()
 
+    await createAuditLog({
+      bookingId: booking._id,
+      action: 'pay',
+      actorId: userId,
+      actorType: role,
+      previousState,
+      newState: booking.toObject()
+    })
+
     try {
       const customer = await User.findById(booking.userId).lean()
       if (customer?.email) {
@@ -582,6 +634,7 @@ export async function payBooking(req, res) {
     } catch (mailError) {
       console.error('Error al enviar correo de pago:', mailError)
     }
+
 
     return res.status(200).json(booking)
   } catch (error) {
@@ -636,6 +689,8 @@ export async function extendBooking(req, res) {
     if (!booking) return res.status(404).json({ message: 'Reserva no encontrada' })
     if (booking.status === 'canceled')
       return res.status(400).json({ message: 'No se puede extender una reserva cancelada' })
+
+    const previousState = booking.toObject()
 
     const newEndDate = parseDate(endDate)
     if (!newEndDate) {
@@ -692,6 +747,15 @@ export async function extendBooking(req, res) {
 
     await booking.save()
 
+    await createAuditLog({
+      bookingId: booking._id,
+      action: 'extend-booking',
+      actorId: userId,
+      actorType: role,
+      previousState,
+      newState: booking.toObject()
+    })
+
     res.status(200).json(booking)
   } catch (error) {
     console.error(error)
@@ -744,9 +808,79 @@ export async function deleteBooking(req, res) {
 
     await Booking.deleteOne({ _id: id })
 
+    //Crear nuevo log de auditoría (eliminar/delete reserva)
+
+    await createAuditLog({
+      bookingId: booking._id,
+      action: 'delete',
+      actorId: userId,
+      actorType: role,
+      previousState: booking.toObject(),
+      newState: null
+    })
+
     res.status(200).json({ message: 'Reserva eliminada correctamente' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error del servidor' })
   }
 }
+
+// Registro de la Auditoria
+///GET /api/bookings/audit/:id
+export async function getBookingAudit(req, res) {
+
+  try {
+
+    const { id } = req.params
+
+    const logs = await BookingAuditLog
+      .find({ bookingId: id })
+      .sort({ timestamp: 1 })
+
+    res.status(200).json(logs)
+
+  } catch (error) {
+
+    console.log(error)
+
+    res.status(500).json({
+      message: 'Error del servidor'
+    })
+  }
+}
+
+// GET /api/bookings/audit
+export async function getAllBookingAudit(req, res) {
+
+  try {
+
+    // eliminar logs > 2 meses
+    const twoMonthsAgo = new Date()
+
+    twoMonthsAgo.setMonth(
+      twoMonthsAgo.getMonth() - 2
+    )
+
+    await BookingAuditLog.deleteMany({
+      timestamp: { $lt: twoMonthsAgo }
+    })
+
+    // recuperar logs restantes
+    const logs = await BookingAuditLog
+      .find()
+      .sort({ timestamp: -1 })
+
+    res.status(200).json(logs)
+
+  } catch (error) {
+
+    console.log(error)
+
+    res.status(500).json({
+      message: 'Error del servidor'
+    })
+  }
+}
+
+

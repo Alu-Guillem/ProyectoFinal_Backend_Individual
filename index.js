@@ -25,6 +25,8 @@ import { connectDB } from '#libs/database/index.js'
 import { connectEmail } from '#libs/mailing/index.js'
 import { startBookingReminders } from '#modules/bookings/booking-reminders.js'
 
+import multer from 'multer'
+
 /**
  * Instancia principal de la aplicación Express
  * @type {import('express').Application}
@@ -52,10 +54,19 @@ startBookingReminders()
 app.use(express.json())
 
 //Subida de fotos
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
-
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'))) 
+  
 /** Logger de peticiones HTTP en modo desarrollo */
 app.use(morgan('dev'))
+
+/** Multer middleware para la subida de archivos */
+app.use(
+  '/uploads',
+  express.static(
+    path.resolve('src/rooms/uploads')
+  )
+)
+
 
 // ─────────────────────────────────────────────────────────────
 // Rutas

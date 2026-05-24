@@ -37,11 +37,8 @@ export const generateInvoiceNumber = async () => {
 
 // Generar PDF de factura para una reserva
 export const getInvoicePdf = async (req, res) => {
-
   try {
-
     const { id } = req.params
-
     const booking = await Booking.findById(id).lean()
 
     if (!booking) {
@@ -55,27 +52,24 @@ export const getInvoicePdf = async (req, res) => {
 
     // Generar número factura
     if (!booking.invoiceNumber) {
-
-      booking.invoiceNumber =
-        await generateInvoiceNumber()
-
+      booking.invoiceNumber = await generateInvoiceNumber()
       await Booking.updateOne(
         { _id: booking._id },
-        {
-          invoiceNumber: booking.invoiceNumber
-        }
+        { invoiceNumber: booking.invoiceNumber }
       )
     }
 
-    const doc = new PDFDocument({
-      margin: 50
+    // Fecha elegante corregida
+    const formattedDate = new Date(booking.bookingDate).toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     })
 
-    res.setHeader(
-      'Content-Type',
-      'application/pdf'
-    )
+    const doc = new PDFDocument({ margin: 50 })
 
+    res.setHeader('Content-Type', 'application/pdf')
     res.setHeader(
       'Content-Disposition',
       `inline; filename=factura-${booking.invoiceNumber}.pdf`
@@ -84,85 +78,139 @@ export const getInvoicePdf = async (req, res) => {
     doc.pipe(res)
 
     // ======================
-    // EMPRESA
+    // HEADER HOTEL (Centrado)
     // ======================
-
     doc
-      .fontSize(20)
-      .text('HOTEL CALPE')
-
-    doc
-      .fontSize(10)
-      .text('Calle Example 123')
-      .text('03710 Calpe')
-      .text('B12345678')
-
-    // ======================
-    // CLIENTE
-    // ======================
-
-    doc.moveDown(2)
-
-    doc
-      .fontSize(14)
-      .text('Cliente')
+      .fontSize(22)
+      .font('Helvetica-Bold')
+      .text('HOTEL CALPE', { align: 'center' })
 
     doc
       .fontSize(10)
-      .text(`${customer.firstName} ${customer.lastName}`)
-      .text(customer.email)
-
-    // ======================
-    // FACTURA
-    // ======================
-
-    doc.moveDown(2)
-
-    doc
-      .fontSize(14)
-      .text(`Factura ${booking.invoiceNumber}`)
-
-    doc
-      .fontSize(10)
-      .text(`Fecha: ${booking.bookingDate}`)
-
-    // ======================
-    // TABLA
-    // ======================
+      .font('Helvetica')
+      .text('Avenida Example 123, Calpe', { align: 'center' })
+      .text('CIF: B12345678', { align: 'center' })
+      .text('+34 600 000 000', { align: 'center' })
+      .text('reservas@hotelcalpe.com', { align: 'center' })
 
     doc.moveDown()
 
-    doc.text(
-      'Habitación | Tipo | Precio | Ocupantes | Desc. | Importe'
-    )
-
-    doc.moveDown(0.5)
-
-    doc.text(
-      `${room.name} | ${room.type} | ${booking.pricePerNight}€ | ${booking.occupants} | ${booking.discount}% | ${booking.totalPrice}€`
-    )
+    // Línea separadora
+    doc.moveTo(50, doc.y)
+       .lineTo(550, doc.y)
+       .stroke()
 
     // ======================
-    // TOTALES
+    // CLIENTE Y FACTURA (Columnas con coordenadas fijas)
     // ======================
+    const infoY = doc.y + 20
 
+    // Columna Izquierda: Cliente
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(11)
+      .text('CLIENTE', 50, infoY)
+
+    doc
+      .font('Helvetica')
+      .text(`Nombre: ${customer.firstName} ${customer.lastName}`, 50)
+      .text(`Email: ${customer.email}`, 50)
+
+    // Columna Derecha: Factura
+    doc
+      .font('Helvetica-Bold')
+      .text('FACTURA', 350, infoY)
+
+    doc
+      .font('Helvetica')
+      .text(`Nº ${booking.invoiceNumber}`, 350)
+      .text(`Fecha: ${formattedDate}`, 350)
+
+    doc.moveDown()
+
+    // Línea separadora
+
+    doc.moveTo(50, doc.y)
+       .lineTo(550, doc.y)
+       .stroke()
+
+    // ======================
+    // TABLA ELEGANTE (Coordenadas fijas por seguridad)
+    // ======================
+    const tableTop = infoY + 70
+
+    // Cabecera
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(12)
+
+    doc.text('Habitación', 50, tableTop)
+    doc.text('Tipo', 180, tableTop)
+    doc.text('Precio', 280, tableTop)
+    doc.text('Ocup.', 360, tableTop)
+    doc.text('Desc.', 430, tableTop)
+    doc.text('Importe', 500, tableTop)
+
+    // Línea divisoria tabla
+    doc.moveTo(50, tableTop + 18)
+       .lineTo(550, tableTop + 18)
+       .stroke()
+
+    // Datos tabla
+    const rowY = tableTop + 28
+
+    doc
+      .font('Helvetica')
+      .fontSize(11)
+
+    doc.text(room.name, 50, rowY)
+    doc.text(room.type, 180, rowY)
+    doc.text(`${booking.pricePerNight} €`, 280, rowY)
+    doc.text(String(booking.occupants), 360, rowY)
+    doc.text(`${booking.discount}%`, 430, rowY)
+    doc.text(`${booking.totalPrice} €`, 500, rowY)
+
+    // ======================
+    // RESUMEN ECONÓMICO ELEGANTE
+    // ======================
     const subtotal = booking.totalPrice
-    const iva = subtotal * 0.21
-    const total = subtotal + iva
+    const iva = Number((subtotal * 0.10).toFixed(2)) // IVA 10% corregido y limpio
+    const total = Number((subtotal + iva).toFixed(2))
 
+    // Forzamos el cursor de PDFKit debajo de la fila de datos
+    doc.y = rowY + 30 
     doc.moveDown(2)
 
-    doc.text(`Subtotal: ${subtotal.toFixed(2)} €`)
-    doc.text(`IVA (21%): ${iva.toFixed(2)} €`)
-    doc.fontSize(14)
-    doc.text(`TOTAL: ${total.toFixed(2)} €`)
+    doc.font('Helvetica')
+    doc.text(`Subtotal: ${subtotal.toFixed(2)} €`, { align: 'right' })
+    doc.text(`IVA (10%): ${iva.toFixed(2)} €`, { align: 'right' })
+
+    // Línea pre-total
+    doc.moveTo(450, doc.y + 5)
+       .lineTo(550, doc.y + 5)
+       .stroke()
+
+    doc.moveDown()
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .text(`TOTAL: ${total.toFixed(2)} €`, { align: 'right' })
+
+    // ======================
+    // FOOTER
+    // ======================
+    doc.moveDown(4)
+
+    doc
+      .fontSize(12)
+      .font('Helvetica-Oblique')
+      .text('Gracias por su estancia', { align: 'center' })
 
     doc.end()
 
   } catch (error) {
-
     console.error(error)
-
     res.status(500).json({
       message: 'Error generando factura'
     })

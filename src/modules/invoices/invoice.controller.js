@@ -78,22 +78,25 @@ export const getInvoicePdf = async (req, res) => {
     doc.pipe(res)
 
     // ======================
-    // HEADER HOTEL (Centrado)
+    // HEADER HOTEL 
     // ======================
     doc
       .fontSize(22)
       .font('Helvetica-Bold')
-      .text('HOTEL CALPE', { align: 'center' })
+      .fillColor('#200877')
+      .text('HOTEL PERE MARIA', { align: 'center' })
+      
 
     doc
       .fontSize(10)
       .font('Helvetica')
+      .fillColor('#000000')
       .text('Avenida Example 123, Calpe', { align: 'center' })
       .text('CIF: B12345678', { align: 'center' })
       .text('+34 600 000 000', { align: 'center' })
-      .text('reservas@hotelcalpe.com', { align: 'center' })
+      .text('reservas@peremaria.com', { align: 'center' })
 
-    doc.moveDown()
+    doc.moveDown(3)
 
     // Línea separadora
     doc.moveTo(50, doc.y)
@@ -101,9 +104,9 @@ export const getInvoicePdf = async (req, res) => {
        .stroke()
 
     // ======================
-    // CLIENTE Y FACTURA (Columnas con coordenadas fijas)
+    // CLIENTE Y FACTURA 
     // ======================
-    const infoY = doc.y + 20
+    var infoY = doc.y + 20
 
     // Columna Izquierda: Cliente
     doc
@@ -114,9 +117,12 @@ export const getInvoicePdf = async (req, res) => {
     doc
       .font('Helvetica')
       .text(`Nombre: ${customer.firstName} ${customer.lastName}`, 50)
+      .text(`DNI: ${customer.dni}`, 50)
       .text(`Email: ${customer.email}`, 50)
 
+
     // Columna Derecha: Factura
+    infoY += 5
     doc
       .font('Helvetica-Bold')
       .text('FACTURA', 350, infoY)
@@ -126,7 +132,7 @@ export const getInvoicePdf = async (req, res) => {
       .text(`Nº ${booking.invoiceNumber}`, 350)
       .text(`Fecha: ${formattedDate}`, 350)
 
-    doc.moveDown()
+    doc.moveDown(2)
 
     // Línea separadora
 
@@ -135,77 +141,217 @@ export const getInvoicePdf = async (req, res) => {
        .stroke()
 
     // ======================
-    // TABLA ELEGANTE (Coordenadas fijas por seguridad)
+    // TABLA  
     // ======================
-    const tableTop = infoY + 70
+      const tableTop = infoY + 90
+      const rowHeight = 25
+      const startX = 50
 
-    // Cabecera
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(12)
+      // Columnas compactas reales
+      const cols = {
+        room: 50,
+        type: 145,
+        occ: 235,
+        nights: 290,
+        price: 350,
+        disc: 425,
+        amount: 485,
+        end: 560
+      }
 
-    doc.text('Habitación', 50, tableTop)
-    doc.text('Tipo', 180, tableTop)
-    doc.text('Precio', 280, tableTop)
-    doc.text('Ocup.', 360, tableTop)
-    doc.text('Desc.', 430, tableTop)
-    doc.text('Importe', 500, tableTop)
+      // ======================
+      // CABECERA
+      // ======================
 
-    // Línea divisoria tabla
-    doc.moveTo(50, tableTop + 18)
-       .lineTo(550, tableTop + 18)
-       .stroke()
+      doc
+        .rect(startX, tableTop, cols.end - startX, rowHeight)
+        .fill('#c1b1f8')
+        
 
-    // Datos tabla
-    const rowY = tableTop + 28
+      doc
+        .fillColor('black')
+        .rect(startX, tableTop, cols.end - startX, rowHeight)
+        .stroke()
+
+      // Líneas verticales
+      for (const x of [
+        cols.type,
+        cols.occ,
+        cols.nights,
+        cols.price,
+        cols.disc,
+        cols.amount
+      ]) {
+        doc.moveTo(x, tableTop)
+          .lineTo(x, tableTop + rowHeight)
+          .stroke()
+      }
+
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(9)
+
+      // Cabecera centrada
+      doc.text('Habitación', cols.room, tableTop + 7, {
+        width: cols.type - cols.room,
+        align: 'center'
+      })
+
+      doc.text('Tipo', cols.type, tableTop + 7, {
+        width: cols.occ - cols.type,
+        align: 'center'
+      })
+
+      doc.text('Ocup.', cols.occ, tableTop + 7, {
+        width: cols.nights - cols.occ,
+        align: 'center'
+      })
+
+      doc.text('Noches', cols.nights, tableTop + 7, {
+        width: cols.price - cols.nights,
+        align: 'center'
+      })
+
+      doc.text('Precio', cols.price, tableTop + 7, {
+        width: cols.disc - cols.price,
+        align: 'center'
+      })
+
+      doc.text('Desc.', cols.disc, tableTop + 7, {
+        width: cols.amount - cols.disc,
+        align: 'center'
+      })
+
+      doc.text('Importe', cols.amount, tableTop + 7, {
+        width: cols.end - cols.amount,
+        align: 'center'
+      })
+
+
+      // ======================
+      // FILA DATOS
+      // ======================
+
+      const rowY = tableTop + rowHeight
+
+      doc
+        .rect(startX, rowY, cols.end - startX, rowHeight)
+        .stroke()
+
+      for (const x of [
+        cols.type,
+        cols.occ,
+        cols.nights,
+        cols.price,
+        cols.disc,
+        cols.amount
+      ]) {
+        doc.moveTo(x, rowY)
+          .lineTo(x, rowY + rowHeight)
+          .stroke()
+      }
+
+      doc
+        .font('Helvetica')
+        .fontSize(9)
+
+      // Nombre
+      doc.text(room.name, cols.room + 4, rowY + 7, {
+        width: cols.type - cols.room - 8
+      })
+
+      // Tipo
+      doc.text(room.type, cols.type + 4, rowY + 7, {
+        width: cols.occ - cols.type - 8
+      })
+
+      // Ocupantes
+      doc.text(String(booking.occupants), cols.occ, rowY + 7, {
+        width: cols.nights - cols.occ,
+        align: 'center'
+      })
+
+      // Noches
+      doc.text(String(booking.totalNights), cols.nights, rowY + 7, {
+        width: cols.price - cols.nights,
+        align: 'center'
+      })
+
+      // --- CÁLCULO INVERSO DEL PRECIO REAL ---
+      // Si el descuento es 100%, el precio original no se puede calcular matemáticamente (asumimos 0 para evitar error)
+      const discountFactor = 1 - (booking.discount / 100);
+      const originalPricePerNight = discountFactor > 0 
+        ? booking.pricePerNight / discountFactor 
+        : 0;
+
+      // Precio (Ahora muestra el precio REAL original antes del descuento)
+      doc.text(`${originalPricePerNight.toFixed(2)} €`, cols.price, rowY + 7, {
+        width: cols.disc - cols.price - 6,
+        align: 'right'
+      })
+
+      // Descuento
+      doc.text(`${booking.discount}%`, cols.disc, rowY + 7, {
+        width: cols.amount - cols.disc,
+        align: 'center'
+      })
+
+      // Importe (Mantiene el total final que ya viene correcto de la API)
+      doc.text(`${booking.totalPrice.toFixed(2)} €`, cols.amount, rowY + 7, {
+        width: cols.end - cols.amount - 6,
+        align: 'right'
+      })
+
+    // ======================
+    // RESUMEN ECONÓMICO
+    // ======================
+    const subtotal = booking.totalPrice
+    const iva = Number((subtotal * 0.25).toFixed(2))
+    const total = Number((subtotal + iva).toFixed(2))
+
+    const totalsY = rowY + 100
 
     doc
       .font('Helvetica')
       .fontSize(11)
 
-    doc.text(room.name, 50, rowY)
-    doc.text(room.type, 180, rowY)
-    doc.text(`${booking.pricePerNight} €`, 280, rowY)
-    doc.text(String(booking.occupants), 360, rowY)
-    doc.text(`${booking.discount}%`, 430, rowY)
-    doc.text(`${booking.totalPrice} €`, 500, rowY)
+    // Empezamos en 380 con ancho de 180 para llegar a 560 (borde derecho)
+    doc.text(`Subtotal: ${subtotal.toFixed(2)} €`, 380, totalsY, {
+      width: 180,
+      align: 'right'
+    })
 
-    // ======================
-    // RESUMEN ECONÓMICO ELEGANTE
-    // ======================
-    const subtotal = booking.totalPrice
-    const iva = Number((subtotal * 0.10).toFixed(2)) // IVA 10% corregido y limpio
-    const total = Number((subtotal + iva).toFixed(2))
+    doc.text(`IVA (25%): ${iva.toFixed(2)} €`, 380, totalsY + 20, {
+      width: 180,
+      align: 'right'
+    })
 
-    // Forzamos el cursor de PDFKit debajo de la fila de datos
-    doc.y = rowY + 30 
-    doc.moveDown(2)
-
-    doc.font('Helvetica')
-    doc.text(`Subtotal: ${subtotal.toFixed(2)} €`, { align: 'right' })
-    doc.text(`IVA (10%): ${iva.toFixed(2)} €`, { align: 'right' })
-
-    // Línea pre-total
-    doc.moveTo(450, doc.y + 5)
-       .lineTo(550, doc.y + 5)
+    // Línea total: ahora va desde 460 hasta 560 para ajustarse al diseño derecho
+    doc.moveTo(460, totalsY + 45)
+       .lineTo(560, totalsY + 45)
        .stroke()
-
-    doc.moveDown()
 
     doc
       .font('Helvetica-Bold')
       .fontSize(14)
-      .text(`TOTAL: ${total.toFixed(2)} €`, { align: 'right' })
+      .text(`TOTAL: ${total.toFixed(2)} €`, 380, totalsY + 55, {
+        width: 180,
+        align: 'right'
+      })
 
     // ======================
     // FOOTER
     // ======================
-    doc.moveDown(4)
+    doc.moveDown(2)
+    const footerY = doc.page.height - 70
 
     doc
-      .fontSize(12)
+      .fontSize(15)
       .font('Helvetica-Oblique')
-      .text('Gracias por su estancia', { align: 'center' })
+      .text('- Gracias por su estancia -', 50, footerY, {
+        width: 500,
+        align: 'center'
+      })
 
     doc.end()
 

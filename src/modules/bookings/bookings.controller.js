@@ -855,6 +855,20 @@ export async function getAllBookingAudit(req, res) {
 
   try {
 
+    const {
+      action,
+      role
+     } = req.query
+    const filter = {}
+
+    if (action) {
+      filter.action = action
+    }
+
+    if (role) {
+      filter.actorType = role
+    }
+
     // eliminar logs > 2 meses
     const twoMonthsAgo = new Date()
 
@@ -868,7 +882,7 @@ export async function getAllBookingAudit(req, res) {
 
     // recuperar logs restantes
     const logs = await BookingAuditLog
-      .find()
+      .find(filter)
       .sort({ timestamp: -1 })
 
     res.status(200).json(logs)

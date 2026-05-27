@@ -479,7 +479,6 @@ export const toggleMaintenance = async () => {
   const today = new Date()
 
   try {
-
     const maintenanceRooms = await Room.find({
       maintenanceTime: { $gt: today },
       occuped: false
@@ -490,12 +489,13 @@ export const toggleMaintenance = async () => {
     // Marcar mantenimiento = true
     await Room.updateMany(
       { _id: { $in: maintenanceRoomIds } },
-      { maintenance: true }
+      { maintenance: true, maintenanceReason: "Limpieza Programada" }
     )
+
     // Marcar mantenimiento = false
     await Room.updateMany(
       { _id: { $nin: maintenanceRoomIds } },
-      { maintenance: false }
+      { maintenance: false, maintenanceReason: "" }
     )
 
   } catch (error) {
@@ -519,6 +519,12 @@ export const setRoomMaintenance = async (req, res) => {
       })
     }
 
+    if(date <= new Date()) {
+      return res.status(400).json({
+        message: 'La fecha de mantenimiento no puede ser en el pasado'
+      })
+    }
+    
     if (
       hours === undefined ||
       isNaN(hours) ||
@@ -528,6 +534,12 @@ export const setRoomMaintenance = async (req, res) => {
 
       return res.status(400).json({
         message: 'Hora inválida'
+      })
+    }
+
+    if(hours < new Date().getHours() && new Date(date).toDateString() === new Date().toDateString()) {
+      return res.status(400).json({
+        message: 'La hora de mantenimiento no puede ser en el pasado'
       })
     }
 
@@ -562,7 +574,7 @@ export const setRoomMaintenance = async (req, res) => {
 
     const maintenanceTime = new Date(date)
 
-    maintenanceTime.setHours(
+    maintenanceTime.setUTCHours(
       Number(hours),
       0,
       0,
@@ -678,7 +690,7 @@ export const uploadRoomImage = async (req, res) => {
       })
     }
 
-    room.image = `/src/rooms/uploads/${req.file.filename}` //Ruta 
+    room.image = `/uploads/${req.file.filename}` // Ruta publica servida por Express
 
     await room.save()
 

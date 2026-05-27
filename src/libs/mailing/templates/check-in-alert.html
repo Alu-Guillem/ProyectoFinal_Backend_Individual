@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recordatorio de check-in</title>
+    <style>
+      .preheader {
+        display: none;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        color: transparent;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          width: 100% !important;
+        }
+
+        .pad {
+          padding: 20px !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body style="margin: 0; padding: 0; background-color: #f5f7ff">
+    <div class="preheader">Tu check-in es en 24 horas.</div>
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="background-color: #f5f7ff"
+    >
+      <tr>
+        <td align="center" style="padding: 28px 12px">
+          <table
+            role="presentation"
+            class="container"
+            width="600"
+            cellspacing="0"
+            cellpadding="0"
+            style="
+              width: 100%;
+              max-width: 600px;
+              background-color: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              border: 1px solid #e4e7f5;
+            "
+          >
+            <tr>
+              <td
+                style="
+                  padding: 18px 22px;
+                  background-color: #0f172a;
+                  font-family: Arial, sans-serif;
+                  color: #ffffff;
+                "
+              >
+                <div style="font-size: 16px; letter-spacing: 0.6px">Pere Maria Hotel</div>
+                <div style="font-size: 20px; font-weight: bold; margin-top: 6px">
+                  Check-in en 24 horas
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="pad" style="padding: 22px; font-family: Arial, sans-serif; color: #1b1f2a">
+                <p style="margin: 0 0 12px; font-size: 14px; line-height: 1.6">
+                  Hola, {{name}}. Te esperamos pronto. Aqui tienes los datos de tu llegada.
+                </p>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  style="border: 1px solid #e4e7f5; border-radius: 12px"
+                >
+                  <tr>
+                    <td
+                      style="
+                        width: 140px;
+                        background-color: #1d4ed8;
+                        color: #ffffff;
+                        padding: 16px;
+                        font-family: Arial, sans-serif;
+                      "
+                    >
+                      <div
+                        style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px"
+                      >
+                        Check-in
+                      </div>
+                      <div style="font-size: 18px; font-weight: bold; margin-top: 6px">
+                        {{checkIn}}
+                      </div>
+                    </td>
+                    <td style="padding: 16px; font-size: 14px; line-height: 1.6">
+                      <div><strong>No. Reserva:</strong> {{bookingId}}</div>
+                      <div><strong>Habitacion:</strong> {{roomName}}</div>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.6">
+                  Recuerda traer tu documento de identidad.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  padding: 14px 22px;
+                  background-color: #eef2ff;
+                  font-family: Arial, sans-serif;
+                  font-size: 12px;
+                  color: #4b5563;
+                "
+              >
+                <p style="margin: 0">Si llegas mas tarde, avisanos para ayudarte.</p>
+              </td>
+            </tr>
+          </table>
+          <p
+            style="
+              margin: 12px 0 0;
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              color: #8a94a6;
+            "
+          >
+            © 2026 Pere Maria Hotel.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

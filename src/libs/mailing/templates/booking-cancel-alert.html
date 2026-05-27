@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reserva cancelada</title>
+    <style>
+      .preheader {
+        display: none;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        color: transparent;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          width: 100% !important;
+        }
+
+        .pad {
+          padding: 20px !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body style="margin: 0; padding: 0; background-color: #fff1f2">
+    <div class="preheader">Tu reserva ha sido cancelada.</div>
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="background-color: #fff1f2"
+    >
+      <tr>
+        <td align="center" style="padding: 28px 12px">
+          <table
+            role="presentation"
+            class="container"
+            width="600"
+            cellspacing="0"
+            cellpadding="0"
+            style="
+              width: 100%;
+              max-width: 600px;
+              background-color: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              border: 1px solid #ffd1d6;
+            "
+          >
+            <tr>
+              <td
+                style="
+                  padding: 18px 22px;
+                  background-color: #991b1b;
+                  font-family: Arial, sans-serif;
+                  color: #ffffff;
+                "
+              >
+                <div style="font-size: 16px; letter-spacing: 0.6px">Pere Maria Hotel</div>
+                <div style="font-size: 20px; font-weight: bold; margin-top: 6px">
+                  Reserva cancelada
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="pad" style="padding: 22px; font-family: Arial, sans-serif; color: #1b1f2a">
+                <p style="margin: 0 0 12px; font-size: 14px; line-height: 1.6">
+                  Hola, {{name}}. Tu reserva ha sido cancelada. Aqui tienes el detalle:
+                </p>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  style="background-color: #fff7f7; border: 1px solid #f7c2c7; border-radius: 12px"
+                >
+                  <tr>
+                    <td style="padding: 14px 16px; font-size: 14px; line-height: 1.6">
+                      <div><strong>No. Reserva:</strong> {{bookingId}}</div>
+                      <div><strong>Habitacion:</strong> {{roomName}}</div>
+                      <div><strong>Reembolso:</strong> {{refundAmount}}</div>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.6">
+                  Si no solicitaste esta cancelacion, contactanos cuanto antes.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  padding: 14px 22px;
+                  background-color: #ffe4e6;
+                  font-family: Arial, sans-serif;
+                  font-size: 12px;
+                  color: #7f1d1d;
+                "
+              >
+                <p style="margin: 0">Estamos aqui para ayudarte con cualquier duda.</p>
+              </td>
+            </tr>
+          </table>
+          <p
+            style="
+              margin: 12px 0 0;
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              color: #a11d2b;
+            "
+          >
+            © 2026 Pere Maria Hotel.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

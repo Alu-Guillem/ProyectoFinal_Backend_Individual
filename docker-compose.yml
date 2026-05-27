@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  hotel-api:
+    build: .
+    container_name: hotel
+    networks:
+      - hotel-net
+      - proxy-net
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    volumes:
+      - ./src:/app/src
+      - ./uploads:/app/uploads
+
+networks:
+  hotel-net:
+    external: true
+  proxy-net:
+    external: true

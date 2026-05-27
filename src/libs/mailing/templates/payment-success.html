@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pago confirmado</title>
+    <style>
+      .preheader {
+        display: none;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        color: transparent;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          width: 100% !important;
+        }
+
+        .pad {
+          padding: 20px !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body style="margin: 0; padding: 0; background-color: #f1f5f9">
+    <div class="preheader">Comprobante de pago de Pere Maria Hotel.</div>
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="background-color: #f1f5f9"
+    >
+      <tr>
+        <td align="center" style="padding: 28px 12px">
+          <table
+            role="presentation"
+            class="container"
+            width="560"
+            cellspacing="0"
+            cellpadding="0"
+            style="
+              width: 100%;
+              max-width: 560px;
+              background-color: #ffffff;
+              border-radius: 14px;
+              overflow: hidden;
+              border: 1px solid #e2e8f0;
+            "
+          >
+            <tr>
+              <td
+                style="
+                  padding: 18px 22px;
+                  background-color: #0f172a;
+                  font-family: Arial, sans-serif;
+                  color: #ffffff;
+                "
+              >
+                <div style="font-size: 16px; letter-spacing: 0.6px">Pere Maria Hotel</div>
+                <div style="font-size: 20px; font-weight: bold; margin-top: 6px">
+                  Comprobante de pago
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="pad" style="padding: 22px; font-family: Arial, sans-serif; color: #111827">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellspacing="0"
+                  cellpadding="0"
+                  style="border: 2px dashed #cbd5e1; border-radius: 12px"
+                >
+                  <tr>
+                    <td
+                      style="
+                        padding: 16px;
+                        font-family:
+                          Courier New,
+                          monospace;
+                        font-size: 13px;
+                        line-height: 1.6;
+                      "
+                    >
+                      <div style="font-weight: bold; font-size: 14px">RECIBO</div>
+                      <div>Reserva: {{bookingId}}</div>
+                      <div>Cliente: {{name}}</div>
+                      <div>Fecha: {{date}}</div>
+                      <div>Metodo: {{paymentMethod}}</div>
+                      <div
+                        style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 10px"
+                      >
+                        TOTAL: {{amount}}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+                <p
+                  style="
+                    margin: 14px 0 0;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    font-family: Arial, sans-serif;
+                  "
+                >
+                  Gracias por tu pago. Guarda este recibo para tu control.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  padding: 14px 22px;
+                  background-color: #e2e8f0;
+                  font-family: Arial, sans-serif;
+                  font-size: 12px;
+                  color: #475569;
+                "
+              >
+                <p style="margin: 0">Este comprobante es informativo.</p>
+              </td>
+            </tr>
+          </table>
+          <p
+            style="
+              margin: 12px 0 0;
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              color: #64748b;
+            "
+          >
+            © 2026 Pere Maria Hotel.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

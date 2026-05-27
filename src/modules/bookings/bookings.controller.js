@@ -835,7 +835,7 @@ export async function getBookingAudit(req, res) {
     const { id } = req.params
 
     const logs = await BookingAuditLog
-      .find({ bookingId: id })
+      .find({ actorId: id })
       .sort({ timestamp: 1 })
 
     res.status(200).json(logs)

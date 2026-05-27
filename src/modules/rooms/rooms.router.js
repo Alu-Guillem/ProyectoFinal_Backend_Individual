@@ -23,10 +23,13 @@ router.get('/:id/occupancy/:year', getRoomOccupancy)
 router.get('/:id', getOneRoom)
 router.post('/', createRoom);
 router.put('/:id', updateRoom)
+
 router.put('/:id/close', closeRoom)
+
 router.put('/:id/setMaintenance', setRoomMaintenance)
 router.put('/:id/cancelMaintenance', cancelRoomMaintenance)
 router.patch('/:id/cleaningTime', editCleaningTime)
+
 router.delete('/:id', deleteRoom)
 
 router.post(
